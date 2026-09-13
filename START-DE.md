@@ -8,21 +8,22 @@
 2. Rechts siehst du Gedanken, Erinnerungen und unter **Connections** die Beziehungen.
 3. Unter **A gentle nudge** löst du Regen, einen Fund oder einen Stromausfall aus.
 4. **Pause** hält die Simulation an. Das Symbol daneben geht einen Schritt weiter. Mit **1× / 2× / 4×** wechselst du das Tempo.
-5. **Chronicle** zeigt die Geschichte. Dein Stand wird auf dem Server gespeichert.
-6. Unter **A world they build** siehst du Vorräte, Baufortschritt, den Beitrag jeder Figur und bereits erschlossene Gebiete.
-7. **New beginning** startet nach einer Bestätigung eine neue Welt und löscht auch Gebäude und Vorräte.
+5. **Chronicle** zeigt die Geschichte. Dein Stand wird auf dem Server gespeichert. Wenn du später zurückkommst, holt der Server einen begrenzten Teil der verstrichenen Zeit nach und zeigt dir eine Zusammenfassung.
+6. Unter **A world they build** siehst du Vorräte, die letzte gemeinsame Abstimmung, Bauphasen, Beiträge und bereits erschlossene Gebiete.
+7. Über **Visitor link** kopierst du einen Link mit `?mode=visitor`. Dort kann ein Freund beobachten und Profile/Chronicle öffnen, aber die normalen Änderungs-Buttons werden nicht angeboten.
+8. **New beginning** startet nach einer Bestätigung eine neue Welt und löscht auch Gebäude und Vorräte.
 
-Die Simulation ist regelbasiert und verwendet geschriebene Dialoge. Sie benötigt keinen KI-Schlüssel. Eine Anbindung an ein Sprachmodell ist noch nicht enthalten. Die Welt entwickelt sich weiter, solange die Seite sichtbar ist und die Simulation läuft. Beim Schließen der Seite stoppt der Ablauf dieses Tabs; weitere offene Tabs können dieselbe Welt weiterbewegen.
+Die Simulation ist regelbasiert und verwendet geschriebene Dialoge. Sie benötigt keinen KI-Schlüssel. Eine Anbindung an ein Sprachmodell ist noch nicht enthalten. Während die Besitzerseite offen ist, läuft sie wie bisher. Nach einer Abwesenheit wird beim nächsten Öffnen aus der vergangenen Echtzeit ein begrenzter Offline-Fortschritt berechnet (maximal 96 Zyklen pro Rückkehr).
 
 ## Die drei bauen selbstständig weiter
 
-Moss sammelt Pflanzenmaterial, Lux brauchbare Bauteile und Echo Erkenntnisse. Sobald genügend Material vorhanden ist, beginnen sie gemeinsam das nächste Gebäude. Du musst keine Bauaufträge anklicken.
+Moss sammelt Pflanzenmaterial, Lux brauchbare Bauteile und Echo Erkenntnisse. Sobald mehrere Pläne bezahlbar sind, treffen sich die drei am Reflection Pool und stimmen ab. Die Entscheidung und jede Stimme werden sichtbar gespeichert. Die Brücke bleibt der letzte Schritt eines Distrikts.
 
-Die Reihenfolge ist **Garten → Solarterrasse → Aussichtspunkt → Regenfänger → Werkstatt → Brücke**. Die Gebäude verbessern Pflanzenwachstum, Energie oder Materialgewinnung. Die Brücke öffnet ein neues Gebiet, in dem der Kreislauf erneut beginnt. Pausen, Stromausfälle und das Neuladen der Seite löschen den Baufortschritt nicht.
+Während des Bauens bewegen sich die Figuren zur Baustelle. Der Marker zeigt den Fortschritt, und das Projekt wechselt sichtbar von **foundation** über **frame** zu **finishing**. Nach einer fertigen Brücke erscheint ein zusätzlicher Inselteil auf der Karte und der nächste Distrikt beginnt. Pausen, Stromausfälle und Neuladen löschen den Baufortschritt nicht.
 
-Die Inselgrafik hat drei Ausbaustufen: Ausgangswelt, erste Erweiterung nach dem Aussichtspunkt und ausgebaute Insel nach der Brücke. Weitere Gebiete werden über Bauzahlen und die Gebietsanzeige dargestellt. Die Karte wird nicht unbegrenzt als neue Landschaft gezeichnet.
+Bestehende Spielstände aus Version 1 und 2 werden auf Version 3 übernommen. Erinnerungen, Beziehungen und die bisherige Zeit bleiben erhalten.
 
-Bestehende Spielstände aus Version 1 werden übernommen. Erinnerungen, Beziehungen und die bisherige Zeit bleiben erhalten.
+Hinweis zum Besuchermodus: Er ist für einen normalen geteilten Freundes-Link gedacht und verhindert Änderungen über die Oberfläche. Er ersetzt noch keine echte Anmeldung/Benutzerberechtigung gegen absichtliche Manipulation.
 
 ## Auf dein GitHub hochladen
 
@@ -36,7 +37,13 @@ Die zwei Uploads berücksichtigen GitHubs Grenze von 100 Dateien je Browser-Uplo
 
 Quellen: [Neues Repository anlegen](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository), [Dateien hochladen und Größenlimits](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository).
 
-Der aktuelle Website-Stand wird separat gehostet. Das Hochladen zu GitHub allein stellt die Anwendung mit ihrer Datenbank nicht auf GitHub Pages bereit.
+GitHub allein veröffentlicht die Anwendung nicht. Für diese Version verwendest du **Vercel**:
+
+1. Importiere das Repository in Vercel. `vercel.json` stellt den Build automatisch auf normales Next.js um.
+2. Öffne im Vercel-Projekt **Storage → Create Database → Blob** und wähle **Private**. Dafür ist kein Cloudflare-Konto nötig.
+3. Verbinde den Blob Store mit dem Projekt und starte danach einmal **Redeploy**.
+4. Deine Vercel-URL ist anschließend die Website. Für einen Freund hängst du `?mode=visitor` an.
+
 
 ## Auf deinem PC entwickeln
 

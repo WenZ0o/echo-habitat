@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
-// Compile the actual TypeScript modules; substitute only the Cloudflare binding
-// with SQLite's real prepared statements. No network or production writes.
+// Compile the actual TypeScript modules; substitute only the Vercel Blob SDK
+// with an in-memory CAS store. No network or production writes.
 function loadModule(file, dependencies = {}) {
   const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -20,19 +19,35 @@ const construction = loadModule('lib/habitat/construction.ts');
 const engine = loadModule('lib/habitat/engine.ts', { './residents': residents, './construction': construction });
 
 function apiHarness() {
-  const sqlite = new DatabaseSync(':memory:');
-  for (const file of readdirSync(new URL('../drizzle/', import.meta.url)).filter(name => name.endsWith('.sql')).sort()) {
-    sqlite.exec(readFileSync(new URL(`../drizzle/${file}`, import.meta.url), 'utf8'));
-  }
-  const DB = { prepare(sql) {
-    const statement = sqlite.prepare(sql); let values = [];
-    return { bind(...input) { values = input; return this; },
-      async run() { const result = statement.run(...values); return { success: true, meta: { changes: Number(result.changes) } }; },
-      async first() { return statement.get(...values) ?? null; } };
-  } };
-  const storage = loadModule('db/habitat.ts', { 'cloudflare:workers': { env: { DB } }, '@/lib/habitat/engine': engine });
+  let payload = null;
+  let version = 0;
+  class BlobPreconditionFailedError extends Error {}
+  const blob = {
+    async get() {
+      if (payload === null) return null;
+      return {
+        statusCode: 200,
+        stream: new Blob([payload]).stream(),
+        blob: { etag: `"${version}"`, contentType: 'application/json' },
+      };
+    },
+    async put(_pathname, body, options = {}) {
+      if (payload !== null && !options.allowOverwrite) throw new Error('Blob already exists');
+      if (options.ifMatch && options.ifMatch !== `"${version}"`) throw new BlobPreconditionFailedError('Precondition failed');
+      payload = typeof body === 'string' ? body : String(body);
+      version += 1;
+      return { etag: `"${version}"` };
+    },
+    BlobPreconditionFailedError,
+  };
+  const storage = loadModule('db/habitat.ts', { '@vercel/blob': blob, '@/lib/habitat/engine': engine });
   const api = loadModule('app/api/habitat/route.ts', { '@/db/habitat': storage });
-  return { api, sqlite, close: () => sqlite.close() };
+  return {
+    api,
+    seed(world, revision) { payload = JSON.stringify({ world, revision }); version += 1; },
+    stored() { return payload ? JSON.parse(payload) : null; },
+    close() {},
+  };
 }
 function request(action, revision = 0, extraHeaders = {}) {
   return new Request('https://habitat.test/api/habitat', { method: 'POST',
@@ -82,24 +97,29 @@ test('overlapping events are rejected without corrupting the current world', () 
   assert.throws(() => engine.evolveWorld(world, { type: 'event', event: 'relic' }), /Wait for/);
   assert.equal(JSON.stringify(world), before);
 });
-test('residents reserve materials once, cooperate, and finish a building without a build command', () => {
+test('residents vote, reserve materials once, cooperate, and finish the chosen building', () => {
   const initial = engine.createWorld();
   initial.settlement.resources = { biomass: 100, salvage: 100, insight: 100 };
   const snapshot = JSON.stringify(initial);
   let world = engine.evolveWorld(initial, { type: 'step' });
-  assert.equal(world.settlement.project.blueprint, 'garden');
-  assert.deepEqual(world.settlement.resources, { biomass: 88, salvage: 96, insight: 100 });
+  const projectId = world.settlement.project.blueprint;
+  const blueprint = construction.BLUEPRINTS.find(item => item.id === projectId);
+  const cost = construction.blueprintCost(blueprint, 1);
+  assert.ok(world.settlement.decision, 'a shared decision is recorded before building');
+  assert.equal(world.settlement.decision.chosen, projectId);
+  assert.deepEqual(world.settlement.resources, { biomass: 100 - cost.biomass, salvage: 100 - cost.salvage, insight: 100 - cost.insight });
+  assert.ok(world.residents.every(resident => resident.activity.includes('Meeting')), 'the decision gets its own visible cycle');
   const reserved = structuredClone(world.settlement.resources);
   const resumed = JSON.parse(JSON.stringify(world));
   assert.deepEqual(engine.evolveWorld(resumed, { type: 'step' }), engine.evolveWorld(world, { type: 'step' }));
   world = engine.evolveWorld(world, { type: 'step' });
   assert.deepEqual(world.settlement.resources, reserved, 'materials must not be charged again while building');
   assert.ok(Object.values(world.settlement.project.contributions).every(work => work > 0), 'all residents contribute');
-  for (let i = 0; i < 20 && !world.settlement.built.garden; i++) world = engine.evolveWorld(world, { type: 'step' });
-  assert.equal(world.settlement.built.garden, 1);
+  for (let i = 0; i < 30 && !world.settlement.built[projectId]; i++) world = engine.evolveWorld(world, { type: 'step' });
+  assert.equal(world.settlement.built[projectId], 1);
   assert.equal(world.settlement.project, null);
   for (const resident of world.residents) {
-    assert.ok(resident.memories.some(memory => memory.kind === 'building' && memory.text.includes('Living garden is complete')));
+    assert.ok(resident.memories.some(memory => memory.kind === 'building' && memory.text.includes(`${blueprint.name} is complete`)));
     assert.ok(resident.bonds[resident.id === 'moss' ? 'lux' : 'moss'] > 50);
   }
   assert.equal(JSON.stringify(initial), snapshot);
@@ -132,28 +152,47 @@ test('rest and emergencies take priority while a construction project survives i
   assert.ok(blackout.power > 12);
   assert.deepEqual(blackout.settlement.resources, initial.settlement.resources);
 });
-test('a version 1 SQLite save upgrades without resetting history and saves under its existing revision', async () => {
-  const { api, sqlite, close } = apiHarness();
+test('a version 1 saved world upgrades without resetting history and saves under its existing revision', async () => {
+  const { api, seed, stored, close } = apiHarness();
   try {
     let old = engine.evolveWorld(engine.createWorld(), { type: 'event', event: 'relic' });
-    delete old.settlement; old.version = 1;
-    sqlite.prepare('INSERT INTO habitats (id, state, revision) VALUES (?, ?, ?)').run('main', JSON.stringify(old), 7);
+    delete old.settlement; delete old.lastActiveAt; old.residents.forEach(resident => { delete resident.position; }); old.version = 1;
+    seed(old, 7);
     const loaded = await (await api.GET()).json();
-    assert.equal(loaded.revision, 7); assert.equal(loaded.world.version, 2);
+    assert.equal(loaded.revision, 7); assert.equal(loaded.world.version, 3);
     assert.equal(loaded.world.tick, old.tick);
-    assert.deepEqual(loaded.world.residents, old.residents);
+    assert.deepEqual(loaded.world.residents.map(({ position, ...resident }) => resident), old.residents);
     assert.deepEqual(loaded.world.chronicle, old.chronicle);
     assert.deepEqual(loaded.world.settlement, construction.createSettlement());
     assert.equal((await api.POST(request({ type: 'step' }, 7))).status, 200);
-    const saved = JSON.parse(sqlite.prepare('SELECT state FROM habitats WHERE id = ?').get('main').state);
-    assert.equal(saved.version, 2); assert.equal(saved.tick, old.tick + 1);
+    const saved = stored().world;
+    assert.equal(saved.version, 3); assert.equal(saved.tick, old.tick + 1);
     assert.ok(saved.settlement);
     assert.equal((await api.POST(request({ type: 'step' }, 7))).status, 409);
     assert.equal((await api.POST(request({ type: 'reset' }, 8))).status, 200);
     assert.deepEqual((await (await api.GET()).json()).world.settlement, construction.createSettlement());
   } finally { close(); }
 });
-test('API stores the world in SQLite and reloads it with the same revision', async () => {
+test('resident positions move with activities and stay inside the visible habitat', () => {
+  let world = engine.createWorld();
+  const start = Object.fromEntries(world.residents.map(resident => [resident.id, resident.position]));
+  for (let i = 0; i < 8; i++) world = engine.evolveWorld(world, { type: 'step' });
+  assert.ok(world.residents.some(resident => resident.position.x !== start[resident.id].x || resident.position.y !== start[resident.id].y));
+  for (const resident of world.residents) {
+    assert.ok(resident.position.x >= 8 && resident.position.x <= 92);
+    assert.ok(resident.position.y >= 17 && resident.position.y <= 79);
+  }
+});
+test('offline catch-up advances a bounded number of cycles and reports what happened', () => {
+  const start = 1_700_000_000_000;
+  const initial = engine.createWorld(4173, start);
+  const short = engine.advanceOffline(initial, start + engine.OFFLINE_STEP_MS * 3 + 1000);
+  assert.equal(short.summary.steps, 3); assert.equal(short.world.tick, 3);
+  assert.equal(short.world.lastActiveAt, start + engine.OFFLINE_STEP_MS * 3 + 1000);
+  const long = engine.advanceOffline(engine.createWorld(4173, start), start + engine.OFFLINE_STEP_MS * (engine.MAX_OFFLINE_STEPS + 50));
+  assert.equal(long.summary.steps, engine.MAX_OFFLINE_STEPS);
+});
+test('API stores the world in Vercel Blob and reloads it with the same revision', async () => {
   const { api, close } = apiHarness();
   try {
     const initial = await (await api.GET()).json(); assert.equal(initial.revision, 0);
@@ -173,6 +212,18 @@ test('concurrent and stale actions cannot overwrite newer memories', async () =>
     const loaded = await (await api.GET()).json(); assert.equal(loaded.revision, 1); assert.equal(loaded.world.tick, 1);
     const stale = await api.POST(request({ type: 'reset' }, 0)); assert.equal(stale.status, 409);
     assert.equal((await (await api.GET()).json()).revision, 1);
+  } finally { close(); }
+});
+test('visitor mode is read-only through the visitor API path', async () => {
+  const { api, close } = apiHarness();
+  try {
+    const visitor = await (await api.GET(new Request('https://habitat.test/api/habitat?mode=visitor'))).json();
+    assert.equal(visitor.mode, 'visitor');
+    const blocked = new Request('https://habitat.test/api/habitat?mode=visitor', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://habitat.test' },
+      body: JSON.stringify({ action: { type: 'step' }, revision: visitor.revision }) });
+    assert.equal((await api.POST(blocked)).status, 403);
+    assert.equal((await (await api.GET()).json()).world.tick, visitor.world.tick);
   } finally { close(); }
 });
 test('invalid input, cross-site writes and overlapping interventions fail safely', async () => {
