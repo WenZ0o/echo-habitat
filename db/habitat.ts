@@ -81,19 +81,29 @@ export async function readHabitat(now = Date.now()): Promise<WorldResponse> {
 }
 
 export async function updateHabitat(action: WorldAction, revision: number, now = Date.now()) {
-  const current = await synchronize(now);
+  let current = await synchronize(now);
   if (current.revision !== revision) {
     return { conflict: true as const, world: current.world, revision: current.revision, offline: current.offline };
   }
 
-  const world = evolveWorld(current.world, action);
-  world.lastActiveAt = now;
+  // A private Blob conditional write can lose a very small race between a fresh read
+  // and the following PUT. If the logical revision is still unchanged, refresh the
+  // ETag and retry the same action once instead of unnecessarily pausing the habitat.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const world = evolveWorld(current.world, action);
+    world.lastActiveAt = now;
 
-  try {
-    await replaceSnapshot(current, world, revision + 1);
-    return { conflict: false as const, world, revision: revision + 1 };
-  } catch (error) {
-    if (!(error instanceof BlobPreconditionFailedError)) throw error;
-    return { conflict: true as const, ...await readHabitat(now) };
+    try {
+      await replaceSnapshot(current, world, revision + 1);
+      return { conflict: false as const, world, revision: revision + 1 };
+    } catch (error) {
+      if (!(error instanceof BlobPreconditionFailedError)) throw error;
+      current = await synchronize(now);
+      if (current.revision !== revision) {
+        return { conflict: true as const, world: current.world, revision: current.revision, offline: current.offline };
+      }
+    }
   }
+
+  return { conflict: true as const, ...await readHabitat(now) };
 }

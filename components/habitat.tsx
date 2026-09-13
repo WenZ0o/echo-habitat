@@ -88,8 +88,11 @@ export default function Habitat({ visitorMode = false }: { visitorMode?: boolean
       const res = await fetch("/api/habitat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: dataRef.current.revision, action }) });
       const body = await res.json() as WorldResponse & { error?: string };
       if (res.status === 409 && body.world) {
+        // Background simulation can occasionally race with a just-finished server write.
+        // A step is safe to resync silently; explicit owner actions still surface a conflict.
         accept(body);
-        throw new Error("The habitat changed in another tab. The latest state is now loaded; you can continue.");
+        if (action.type === "step") return body;
+        throw new Error("The habitat changed while that action was being saved. The latest state is loaded; try the action once more.");
       }
       if (!res.ok) throw new Error(body.error ?? "Your change could not be saved.");
       if (!body.world || !Number.isInteger(body.revision)) throw new Error("Your change could not be confirmed. Please reconnect.");
