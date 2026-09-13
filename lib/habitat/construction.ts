@@ -1,9 +1,16 @@
 import type { BlueprintId, Place, ResidentId, Resource, Settlement, World } from "./types";
 
 export interface Blueprint {
-  id: BlueprintId; name: string; lead: ResidentId; place: Place;
-  description: string; benefit: string; cost: Record<Resource, number>; work: number;
-  x: number; y: number;
+  id: BlueprintId;
+  name: string;
+  lead: ResidentId;
+  place: Place;
+  description: string;
+  benefit: string;
+  cost: Record<Resource, number>;
+  work: number;
+  x: number;
+  y: number;
 }
 export const BLUEPRINTS: Blueprint[] = [
   { id: "garden", name: "Living garden", lead: "moss", place: "grove", work: 14,
@@ -33,17 +40,30 @@ export const RESOURCES: Record<Resource, { name: string; lead: ResidentId }> = {
 export const RESOURCE_IDS: Resource[] = ["biomass", "salvage", "insight"];
 export const RESOURCE_CAP = 250;
 export function createSettlement(): Settlement {
-  return { resources: { biomass: 8, salvage: 6, insight: 2 },
-    built: { garden: 0, solar: 0, lookout: 0, cistern: 0, workshop: 0, bridge: 0 }, project: null };
+  return {
+    resources: { biomass: 8, salvage: 6, insight: 2 },
+    built: { garden: 0, solar: 0, lookout: 0, cistern: 0, workshop: 0, bridge: 0 },
+    project: null,
+    decision: null,
+  };
 }
 export function districtOf(world: World) { return Math.min(...Object.values(world.settlement.built)) + 1; }
-export function nextBlueprint(world: World): Blueprint {
+export function districtBlueprints(world: World): Blueprint[] {
   const district = districtOf(world);
-  return BLUEPRINTS.find(blueprint => world.settlement.built[blueprint.id] < district)!;
+  const unfinished = BLUEPRINTS.filter(blueprint => world.settlement.built[blueprint.id] < district);
+  const nonBridge = unfinished.filter(blueprint => blueprint.id !== "bridge");
+  return nonBridge.length ? nonBridge : unfinished;
+}
+export function nextBlueprint(world: World): Blueprint {
+  return districtBlueprints(world)[0] ?? BLUEPRINTS[0];
 }
 export function blueprintCost(blueprint: Blueprint, district: number): Record<Resource, number> {
   const scale = 1 + Math.min(district - 1, 5) * 0.3;
-  return { biomass: Math.ceil(blueprint.cost.biomass * scale), salvage: Math.ceil(blueprint.cost.salvage * scale), insight: Math.ceil(blueprint.cost.insight * scale) };
+  return {
+    biomass: Math.ceil(blueprint.cost.biomass * scale),
+    salvage: Math.ceil(blueprint.cost.salvage * scale),
+    insight: Math.ceil(blueprint.cost.insight * scale),
+  };
 }
 export function workRequired(blueprint: Blueprint, district: number) { return blueprint.work + Math.min(district - 1, 8) * 3; }
 export function addResource(world: World, resource: Resource, amount: number) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { readHabitat, updateHabitat } from "@/db/habitat";
+
 const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("step") }).strict(),
   z.object({ type: z.literal("event"), event: z.enum(["rain", "relic", "blackout"]) }).strict(),
@@ -7,14 +8,22 @@ const actionSchema = z.discriminatedUnion("type", [
 ]);
 const requestSchema = z.object({ revision: z.number().int().nonnegative(), action: actionSchema }).strict();
 const headers = { "Cache-Control": "no-store" };
-export async function GET() {
-  try { return Response.json(await readHabitat(), { headers }); }
-  catch (error) {
+
+export async function GET(request?: Request) {
+  try {
+    const result = await readHabitat();
+    const mode = request && new URL(request.url).searchParams.get("mode") === "visitor" ? "visitor" : "owner";
+    return Response.json({ ...result, mode }, { headers });
+  } catch (error) {
     console.error("Habitat read failed", error);
     return Response.json({ error: "The habitat could not be loaded. Please try again." }, { status: 503, headers });
   }
 }
+
 export async function POST(request: Request) {
+  if (new URL(request.url).searchParams.get("mode") === "visitor") {
+    return Response.json({ error: "Visitor mode is read-only." }, { status: 403, headers });
+  }
   const origin = request.headers.get("origin");
   if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== new URL(request.url).origin)) {
     return Response.json({ error: "This action must come from the habitat." }, { status: 403, headers });

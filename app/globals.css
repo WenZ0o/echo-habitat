@@ -63,3 +63,42 @@
 @media(max-width:370px){.brand>span:not(.version){font-size:15px;letter-spacing:1px}.main-shell{padding-left:12px;padding-right:12px}.page-heading h1{font-size:27px}.page-heading p{font-size:12px}.world-metrics{gap:9px;padding:10px}.world-metrics>div{font-size:11px}.world-metrics>div>svg{display:none}.section-label>span{max-width:43%}.resident-card{padding:11px 8px}.resident-card-bottom>span:last-child{gap:3px}.event-button{padding:13px 9px}.focus-panel{padding:20px}.world-status{font-size:11px}.playback{gap:0}.icon-button{width:30px}}
 .profile-description,.memory p,.log-copy p{font-size:16px}.resident-card>p,.event-button strong,.needs span,.needs strong,.world-status{font-size:14px}.event-button strong{white-space:normal}.profile-mood{font-size:12px}.world-status{line-height:1.4}.memory-meta,.memory-meta>span{font-size:12px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ECHO HABITAT v03: motion, councils, offline progress and visitor mode */
+.habitat-art{position:relative;z-index:0}
+.scene-coordinate,.weather-badge,.scene-caption{z-index:6}
+.world-marker{z-index:5;transition:left 3s cubic-bezier(.22,.61,.36,1),top 3s cubic-bezier(.22,.61,.36,1)}
+.world-marker .marker-ground{animation:resident-ground 2.8s ease-in-out infinite}
+.world-marker .marker-core{animation:resident-breathe 3.6s ease-in-out infinite}
+@keyframes resident-ground{0%,100%{transform:scaleX(.92);opacity:.18}50%{transform:scaleX(1.12);opacity:.27}}
+@keyframes resident-breathe{0%,100%{translate:0 0}50%{translate:0 -2px}}
+
+.district-expansions{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.district-island{position:absolute;transform:translate(-50%,-50%);width:72px;height:48px;border-radius:48% 52% 43% 57% / 59% 45% 55% 41%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 45% 35%,#53633c 0 16%,#33432b 43%,#202d1d 72%,#172117 100%);border:1px solid #72805c88;box-shadow:0 12px 20px #0009,inset 0 5px 12px #85956718;color:#a9b998;font:9px var(--font-mono);letter-spacing:.8px;opacity:.8}
+.district-island:after{content:"";position:absolute;left:12%;right:8%;bottom:-7px;height:10px;border-radius:50%;background:#080d09aa;filter:blur(4px)}
+.district-island.established{animation:island-settle .9s ease-out both}
+.district-island.emerging{border-style:dashed;opacity:.72;background:radial-gradient(circle at 45% 35%,#47533a 0 16%,#2b3827 48%,#18221a 100%)}
+.district-island.emerging:before{content:"";position:absolute;inset:-5px;border-radius:inherit;background:conic-gradient(#c8daa0 var(--emerge),#68735c22 0);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;padding:2px;opacity:.75}
+.district-island small{position:absolute;top:calc(100% + 5px);font:9px var(--font-mono);color:#b7c99f}
+@keyframes island-settle{from{opacity:0;transform:translate(-50%,-45%) scale(.65)}to{opacity:.8;transform:translate(-50%,-50%) scale(1)}}
+
+.building-pin{z-index:4}
+.building-pin.under-construction{min-width:58px;justify-content:center;padding:5px 7px 5px 9px;overflow:visible}
+.construction-site-ring{position:absolute;width:46px;height:46px;border-radius:50%;border:1px dashed #e3c18a99;background:conic-gradient(#e3c18a var(--site-progress),transparent 0);mask:radial-gradient(circle,transparent 61%,#000 63%);animation:site-spin 7s linear infinite;pointer-events:none}
+.construction-percent{font-size:9px;letter-spacing:.3px}
+.phase-foundation{box-shadow:0 3px 10px #0008,0 0 0 4px #b88a4a12}
+.phase-frame{box-shadow:0 3px 10px #0008,0 0 12px #d6ad6b25}
+.phase-finishing{box-shadow:0 3px 10px #0008,0 0 16px #ead39b35}
+@keyframes site-spin{to{rotate:360deg}}
+
+.council-card{border:1px solid #394533;background:#151d16;padding:16px 18px;border-radius:8px;margin:0 0 1px}
+.council-heading{display:flex;align-items:center;gap:11px}.council-icon{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#263122;color:#bed4a2;border:1px solid #46563b}.council-heading>div{min-width:0}.council-heading strong{display:block;color:#dce7d0;font-size:16px;font-weight:500;margin-top:2px}.council-heading>small{margin-left:auto;color:#7f8e76;font:10px var(--font-mono);white-space:nowrap}.council-card>p{color:#9fac93;font-size:13px;line-height:1.6;margin:12px 0}.council-votes{display:flex;gap:7px;flex-wrap:wrap}.council-votes>span{display:flex;align-items:center;gap:5px;border:1px solid #34412f;border-radius:5px;background:#111812;padding:5px 7px;color:#9eac92;font-size:10px}.council-votes i{width:5px;height:5px;border-radius:50%;background:var(--resident);box-shadow:0 0 5px color-mix(in srgb,var(--resident) 60%,transparent)}.council-votes b{font-weight:400;color:#596752}.council-votes>span:last-child{margin-right:0}
+
+.offline-banner,.visitor-banner{border:1px solid #3a4933;border-radius:8px;background:#182119;margin:-10px 0 20px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#aebca2}
+.offline-banner>div{display:flex;align-items:center;gap:10px;min-width:0}.offline-banner>div>svg{color:#c7dca8}.offline-banner span{display:flex;flex-direction:column;gap:3px}.offline-banner strong{font-size:13px;color:#d9e4cf;font-weight:500}.offline-banner small{font-size:11px;line-height:1.5;color:#8fa083}.offline-banner button{border:0;background:transparent;color:#9faf91;font-size:11px;padding:6px}.offline-banner button:hover{color:#d9e4cf}.visitor-banner{justify-content:flex-start;background:#171d19;border-color:#333f37;color:#9fac9f}.visitor-banner strong{color:#d6e0d4;font-weight:500}.visitor-banner>svg{color:#a8b6a5}
+.visitor-link-button,.visitor-mode-label,.read-only-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #354331;background:#172017;color:#aebf9f;border-radius:5px;padding:6px 9px;font:11px var(--font-mono)}
+.visitor-link-button:hover{background:#202b1e;color:#dce9cf;border-color:#4d6145}.visitor-mode-label{color:#b9c6ba;border-color:#39463c;background:#171d19}.read-only-chip{padding:5px 8px;color:#a2b09f}
+.visitor-observe-card{border:1px solid #303c34;background:#151b17;border-radius:9px;padding:17px;display:flex;gap:12px;align-items:flex-start;color:#9ba99c}.visitor-observe-card>svg{color:#b6c4b1;margin-top:2px}.visitor-observe-card strong{font-size:14px;color:#d8e1d6;font-weight:500}.visitor-observe-card p{font-size:12px;line-height:1.6;margin:5px 0 0;color:#879688}
+
+@media(max-width:960px){.visitor-link-button{padding:6px}.visitor-link-button svg{margin:0}.visitor-mode-label{font-size:10px}.district-island{width:58px;height:39px}.council-card{padding:14px}.council-votes>span{font-size:9px}}
+@media(max-width:760px){.visitor-link-button{font-size:0;width:34px;height:34px;justify-content:center;padding:0}.visitor-link-button svg{width:15px;height:15px}.visitor-mode-label{font-size:0;width:34px;height:34px;justify-content:center;padding:0}.visitor-mode-label svg{width:15px;height:15px}.offline-banner{align-items:flex-start}.offline-banner>div{align-items:flex-start}.visitor-banner{font-size:12px}.district-island{width:48px;height:32px;font-size:8px}.building-pin.under-construction{min-width:50px}.construction-site-ring{width:39px;height:39px}.council-heading{align-items:flex-start}.council-heading>small{font-size:9px}.council-card>p{font-size:12px}.council-votes{gap:5px}.council-votes>span{font-size:9px;padding:4px 5px}}
