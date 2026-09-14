@@ -1,84 +1,117 @@
 # ECHO HABITAT
 ![ECHO HABITAT – Projektvorschau](public/habitat.png)
-Three residents. Shared decisions. A world growing beyond its edges.
 
-Version 0.4 adds moving illustrated residents, individually constructed buildings,
-inspectable island districts, council votes with reasons, persistent elapsed-time
-progress, and server-verified owner controls.
+# ECHO HABITAT
+### Three lives. One shared world. A story that keeps growing.
 
-For the GitHub/Vercel update, start with [START-DE.md](START-DE.md)
-or open README.txt in a text editor.
+![Echo Habitat — world artwork](public/habitat.png)
 
-## Running on Vercel
+ECHO HABITAT is a small life simulation about three digital residents
+building a home together.
 
-Use Node 24.x and the included pnpm lockfile. Keep the existing private Vercel
-Blob store connected with BLOB_READ_WRITE_TOKEN; world data stays at
-echo-habitat/world.json. Existing save versions 1–3 are migrated without
-clearing residents, memories or completed structures.
+Watch Moss, Lux and Echo gather resources, choose their next project,
+help each other through unexpected events, and turn empty ground
+into a growing settlement.
 
-Configure two different random server secrets, each at least 32 characters:
-HABITAT_OWNER_KEY for owner sign-in and CRON_SECRET for the daily scheduled job.
-Neither value belongs in source control. Missing owner configuration fails closed:
-visitors can read but cannot reset the world, change its clock or introduce events.
+You don't place every building. You observe the world they create.
 
-The signed owner cookie is HttpOnly, SameSite=Strict and Secure over HTTPS,
-expires after seven days, and is invalidated by changing HABITAT_OWNER_KEY.
-Vercel does not trust ChatGPT identity headers. The visitor URL is a display
-restriction, not an authorization mechanism or a privacy setting.
+## Meet the residents
 
-## Development and verification
+![Moss, Lux and Echo — character artwork](public/world-residents.png)
 
-```sh
-pnpm install --frozen-lockfile
-pnpm dev
-pnpm test
-pnpm exec tsc --noEmit
-pnpm build
-```
+🌱 **Moss — The caretaker**  
+Collects seeds and fibres, tends the grove, and helps the habitat grow.
 
-Local Next.js development also needs the private Blob token and owner secret
-in an ignored .env.local. Do not use production storage for destructive tests.
-The automated tests use in-memory SQLite and a mocked Blob transport; they
-do not write to production.
+☀️ **Lux — The builder**  
+Recovers useful parts, maintains the power, and turns shared ideas
+into working structures.
 
-## How the world works
+✨ **Echo — The explorer**  
+Maps unfamiliar ground, studies discoveries, and looks beyond
+the edge of the island.
 
-The three residents follow authored, deterministic rules, not a language model.
-They prioritize rest and emergencies, gather resources, vote on affordable
-projects, build together and retain bounded personal histories.
+Each resident has their own energy, wellbeing, thoughts,
+memories and relationships.
 
-A shared server clock runs at one cycle per 6.5 seconds at 1x. Viewers only poll;
-more viewers do not accelerate the simulation. Manual commands use a separate
-revision from automatic clock writes. Conditional storage writes prevent
-concurrent updates from overwriting each other.
+## Watch a world take shape
 
-The server processes elapsed time on reads and on the authenticated daily
-Vercel cron. Bounded requests retain unprocessed time and sub-cycle remainders.
-There is no continuously running background process. Pausing stops progress
-for everyone; time spent paused is not replayed. On migration, the new clock
-starts at migration time rather than replaying old idle time at the faster rate.
+- **Moving residents:** follow them between home, meetings and construction.
+- **Shared decisions:** see their council votes and the reasons behind them.
+- **Visible construction:** buildings progress through foundation,
+  frame and finishing stages.
+- **Growing districts:** completed bridges open new ground to develop.
+- **Personal memories:** residents remember discoveries, encounters
+  and the things they build together.
+- **A shared chronicle:** browse the latest moments in the world's story.
 
-The return summary uses each browser's last-seen marker, so another visitor
-cannot consume it. At most 240 chronicle entries and 80 memories per resident
-are retained; cumulative construction and decision counts continue to grow.
+## Give the world a gentle nudge
 
-## Main files
+Introduce rain, leave an unfamiliar relic, or interrupt the power.
 
-- components/habitat.tsx: shared UI and non-overlapping polling.
-- components/world-map.tsx: districts, construction stages and resident sprites.
-- lib/habitat/engine.ts: decisions, migration and elapsed-time simulation.
-- lib/habitat/access.ts: owner authorization and signed cookies.
-- db/habitat.ts: synchronization and conditional updates.
-- db/storage-driver.ts: private Vercel Blob adapter.
-- app/api/habitat: world reads and owner-only commands.
-- app/api/access: owner sign-in and sign-out.
-- app/api/cron: authenticated scheduled synchronization.
+Moss, Lux and Echo respond according to their needs and priorities.
+Rest and emergencies can take precedence over construction.
 
-The original Sites adapter files are retained for compatibility. Updating the
-additional Sites-hosted preview is deferred; this release handoff targets Vercel.
-The two hosts have separate storage and do not automatically share a world.
+Then watch what happens next.
 
-Illustrations are AI-generated and included under public/. No OpenAI API key
-or paid model calls are required by the simulation. Hosting and storage usage
-remain subject to your provider's limits and charges.
+## A world you can return to
+
+Progress is saved in a shared world.
+
+When you return, the simulation processes elapsed time and shows
+what changed since your last visit. A configured daily background
+job also synchronizes the world while nobody is watching.
+
+Pausing the shared clock stops progress for everyone.
+
+## Observe or take control
+
+Visitors can explore the map, inspect residents and read their memories.
+
+The signed-in owner can control the clock, introduce events
+and start a new world. These permissions are checked on the server.
+
+Visitor mode does not change the website's privacy settings.
+
+## How it works
+
+The residents use authored, deterministic simulation rules.
+Their dialogue and decisions do not come from a language model.
+
+**No AI API key is required to run the simulation.**
+
+Built with Next.js, React and TypeScript.
+The Vercel version stores its world in private Vercel Blob storage.
+
+The images above are project artwork, not screenshots of the interface.
+
+## Run the project
+
+Requires Node.js 24.x and pnpm.
+
+    pnpm install --frozen-lockfile
+    pnpm dev
+
+Configure these environment variables locally or in Vercel:
+
+| Variable | Purpose |
+| --- | --- |
+| BLOB_READ_WRITE_TOKEN | Access to the private world storage |
+| HABITAT_OWNER_KEY | Private key for owner sign-in |
+| CRON_SECRET | Protects the scheduled background endpoint |
+
+Use different random values of at least 32 characters for
+HABITAT_OWNER_KEY and CRON_SECRET.
+
+Never commit real keys or .env files to GitHub.
+
+## Project status
+
+Version 0.4 — an evolving experiment in shared world-building.
+
+Moving residents · Council decisions · Construction phases
+Growing districts · Persistent memories · Protected owner controls
+
+---
+
+*A small world, still becoming.*
 
