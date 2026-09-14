@@ -17,7 +17,7 @@ const result = await get(path, {
   headers: {
     "Accept-Encoding": "identity",
   },
-);
+});
 
     if (!result) return null;
 
