@@ -19,8 +19,12 @@ async function synchronize(now: number, limit?: number) {
     if (saved) return saved;
     current = await snapshot(now);
   }
-  // Return the winning committed snapshot; the next read will resume any backlog.
-  return current;
+if (current.world.version !== 4) {
+  throw new Error(
+    "HABITAT_MIGRATION_NOT_SAVED: Save upgrade failed after 5 attempts."
+  );
+}
+return current;
 }
 
 export async function readHabitat(now = Date.now(), limit?: number): Promise<WorldResponse> {
