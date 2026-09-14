@@ -1,7 +1,4 @@
 # ECHO HABITAT
-![ECHO HABITAT – Projektvorschau](public/habitat.png)
-
-# ECHO HABITAT
 ### Three lives. One shared world. A story that keeps growing.
 
 ![Echo Habitat — world artwork](public/habitat.png)
