@@ -11,10 +11,13 @@ const options = {
 
 export const habitatStore: HabitatStore = {
   async read() {
-    const result = await get(path, {
-      access: "private",
-      useCache: false,
-    });
+const result = await get(path, {
+  access: "private",
+  useCache: false,
+  headers: {
+    "Accept-Encoding": "identity",
+  },
+);
 
     if (!result) return null;
 
