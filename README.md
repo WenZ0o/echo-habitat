@@ -3,6 +3,8 @@
 
 ![ECHO HABITAT — application preview](public/preview.png)
 
+https://github.com/user-attachments/assets/184496da-bf1b-4505-ad4a-e3d22fe10dc9
+
 [Explore the live habitat →](https://echo-habitat-1l97.vercel.app/?mode=visitor)
 
 ECHO HABITAT is a small life simulation about three digital residents
