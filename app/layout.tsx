@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./world.css";
 
 export const metadata: Metadata = {
   title: "ECHO HABITAT — A small world, unfolding",

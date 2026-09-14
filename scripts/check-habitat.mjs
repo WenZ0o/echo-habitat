@@ -1,58 +1,47 @@
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import test from 'node:test';
-import ts from 'typescript';
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { DatabaseSync } from "node:sqlite";
+import test from "node:test";
+import ts from "typescript";
 
 const require = createRequire(import.meta.url);
-// Compile the actual TypeScript modules; substitute only the Vercel Blob SDK
-// with an in-memory CAS store. No network or production writes.
 function loadModule(file, dependencies = {}) {
-  const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const source = readFileSync(new URL("../" + file, import.meta.url), "utf8");
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  const module = { exports: {} };
-  new Function('require', 'exports', 'module', compiled)(name => name in dependencies ? dependencies[name] : require(name), module.exports, module);
-  return module.exports;
+  const loaded = { exports: {} };
+  new Function("require", "exports", "module", compiled)(name => name in dependencies ? dependencies[name] : require(name), loaded.exports, loaded);
+  return loaded.exports;
 }
-const residents = loadModule('lib/habitat/residents.ts');
-const construction = loadModule('lib/habitat/construction.ts');
-const engine = loadModule('lib/habitat/engine.ts', { './residents': residents, './construction': construction });
+const residents = loadModule("lib/habitat/residents.ts");
+const construction = loadModule("lib/habitat/construction.ts");
+const engine = loadModule("lib/habitat/engine.ts", { "./residents": residents, "./construction": construction });
+const visits = loadModule("lib/habitat/return-visit.ts");
+const OWNER = { "oai-authenticated-user-id": "site-scoped-owner", "oai-authenticated-user-email": "owner@example.test" };
+const secret = "test-only-owner-key-with-at-least-32-random-characters";
 
 function apiHarness() {
-  let payload = null;
-  let version = 0;
-  class BlobPreconditionFailedError extends Error {}
-  const blob = {
-    async get() {
-      if (payload === null) return null;
-      return {
-        statusCode: 200,
-        stream: new Blob([payload]).stream(),
-        blob: { etag: `"${version}"`, contentType: 'application/json' },
-      };
-    },
-    async put(_pathname, body, options = {}) {
-      if (payload !== null && !options.allowOverwrite) throw new Error('Blob already exists');
-      if (options.ifMatch && options.ifMatch !== `"${version}"`) throw new BlobPreconditionFailedError('Precondition failed');
-      payload = typeof body === 'string' ? body : String(body);
-      version += 1;
-      return { etag: `"${version}"` };
-    },
-    BlobPreconditionFailedError,
-  };
-  const storage = loadModule('db/habitat.ts', { '@vercel/blob': blob, '@/lib/habitat/engine': engine });
-  const api = loadModule('app/api/habitat/route.ts', { '@/db/habitat': storage });
-  return {
-    api,
-    seed(world, revision) { payload = JSON.stringify({ world, revision }); version += 1; },
-    stored() { return payload ? JSON.parse(payload) : null; },
-    close() {},
-  };
+  const sqlite = new DatabaseSync(":memory:");
+  for (const file of readdirSync(new URL("../drizzle/", import.meta.url)).filter(name => name.endsWith(".sql")).sort()) sqlite.exec(readFileSync(new URL("../drizzle/" + file, import.meta.url), "utf8"));
+  const DB = { prepare(sql) {
+    const statement = sqlite.prepare(sql); let values = [];
+    return { bind(...input) { values = input; return this; },
+      async run() { const result = statement.run(...values); return { success: true, meta: { changes: Number(result.changes) } }; },
+      async first() { return statement.get(...values) ?? null; } };
+  } };
+  const env = { DB, HABITAT_OWNER_EMAIL: "owner@example.test" };
+  const runtime = loadModule("db/runtime.sites.ts", { "cloudflare:workers": { env } });
+  const access = loadModule("lib/habitat/access.ts", { "@/db/runtime": runtime });
+  const driver = loadModule("db/storage-driver.sites.ts", { "cloudflare:workers": { env } });
+  const storage = loadModule("db/habitat.ts", { "@/db/storage-driver": driver, "@/lib/habitat/engine": engine });
+  const api = loadModule("app/api/habitat/route.ts", { "@/db/habitat": storage, "@/lib/habitat/access": access });
+  return { api, storage, sqlite, driver, env, close: () => sqlite.close() };
 }
-function request(action, revision = 0, extraHeaders = {}) {
-  return new Request('https://habitat.test/api/habitat', { method: 'POST',
-    headers: { 'Content-Type': 'application/json', Origin: 'https://habitat.test', ...extraHeaders }, body: JSON.stringify({ action, revision }) });
+function request(action, actionRevision = 0, extraHeaders = OWNER, query = "") {
+  return new Request("https://habitat.test/api/habitat" + query, { method: "POST",
+    headers: { "Content-Type": "application/json", Origin: "https://habitat.test", ...extraHeaders }, body: JSON.stringify({ action, actionRevision }) });
 }
+function getRequest(headers = OWNER, query = "") { return new Request("https://habitat.test/api/habitat" + query, { headers }); }
 
 test('every intervention has a distinct, persistent effect and expires after four steps', () => {
   const initial = engine.createWorld();
@@ -97,29 +86,27 @@ test('overlapping events are rejected without corrupting the current world', () 
   assert.throws(() => engine.evolveWorld(world, { type: 'event', event: 'relic' }), /Wait for/);
   assert.equal(JSON.stringify(world), before);
 });
-test('residents vote, reserve materials once, cooperate, and finish the chosen building', () => {
+test('residents reserve materials once, cooperate, and finish a building without a build command', () => {
   const initial = engine.createWorld();
   initial.settlement.resources = { biomass: 100, salvage: 100, insight: 100 };
   const snapshot = JSON.stringify(initial);
   let world = engine.evolveWorld(initial, { type: 'step' });
-  const projectId = world.settlement.project.blueprint;
-  const blueprint = construction.BLUEPRINTS.find(item => item.id === projectId);
-  const cost = construction.blueprintCost(blueprint, 1);
-  assert.ok(world.settlement.decision, 'a shared decision is recorded before building');
-  assert.equal(world.settlement.decision.chosen, projectId);
-  assert.deepEqual(world.settlement.resources, { biomass: 100 - cost.biomass, salvage: 100 - cost.salvage, insight: 100 - cost.insight });
-  assert.ok(world.residents.every(resident => resident.activity.includes('Meeting')), 'the decision gets its own visible cycle');
+  const chosen = construction.BLUEPRINTS.find(item => item.id === world.settlement.project.blueprint);
+  const cost = construction.blueprintCost(chosen, 1);
+  for (const resource of construction.RESOURCE_IDS) assert.equal(world.settlement.resources[resource], 100 - cost[resource]);
+  assert.ok(world.settlement.decision.reasons.moss);
+  assert.equal(world.councilsMade, 1);
   const reserved = structuredClone(world.settlement.resources);
   const resumed = JSON.parse(JSON.stringify(world));
   assert.deepEqual(engine.evolveWorld(resumed, { type: 'step' }), engine.evolveWorld(world, { type: 'step' }));
   world = engine.evolveWorld(world, { type: 'step' });
   assert.deepEqual(world.settlement.resources, reserved, 'materials must not be charged again while building');
   assert.ok(Object.values(world.settlement.project.contributions).every(work => work > 0), 'all residents contribute');
-  for (let i = 0; i < 30 && !world.settlement.built[projectId]; i++) world = engine.evolveWorld(world, { type: 'step' });
-  assert.equal(world.settlement.built[projectId], 1);
+  for (let i = 0; i < 20 && !world.settlement.built[chosen.id]; i++) world = engine.evolveWorld(world, { type: 'step' });
+  assert.equal(world.settlement.built[chosen.id], 1);
   assert.equal(world.settlement.project, null);
   for (const resident of world.residents) {
-    assert.ok(resident.memories.some(memory => memory.kind === 'building' && memory.text.includes(`${blueprint.name} is complete`)));
+    assert.ok(resident.memories.some(memory => memory.kind === 'building' && memory.text.includes(chosen.name + ' is complete')));
     assert.ok(resident.bonds[resident.id === 'moss' ? 'lux' : 'moss'] > 50);
   }
   assert.equal(JSON.stringify(initial), snapshot);
@@ -152,90 +139,188 @@ test('rest and emergencies take priority while a construction project survives i
   assert.ok(blackout.power > 12);
   assert.deepEqual(blackout.settlement.resources, initial.settlement.resources);
 });
-test('a version 1 saved world upgrades without resetting history and saves under its existing revision', async () => {
-  const { api, seed, stored, close } = apiHarness();
-  try {
-    let old = engine.evolveWorld(engine.createWorld(), { type: 'event', event: 'relic' });
-    delete old.settlement; delete old.lastActiveAt; old.residents.forEach(resident => { delete resident.position; }); old.version = 1;
-    seed(old, 7);
-    const loaded = await (await api.GET()).json();
-    assert.equal(loaded.revision, 7); assert.equal(loaded.world.version, 3);
-    assert.equal(loaded.world.tick, old.tick);
-    assert.deepEqual(loaded.world.residents.map(({ position, ...resident }) => resident), old.residents);
-    assert.deepEqual(loaded.world.chronicle, old.chronicle);
-    assert.deepEqual(loaded.world.settlement, construction.createSettlement());
-    assert.equal((await api.POST(request({ type: 'step' }, 7))).status, 200);
-    const saved = stored().world;
-    assert.equal(saved.version, 3); assert.equal(saved.tick, old.tick + 1);
-    assert.ok(saved.settlement);
-    assert.equal((await api.POST(request({ type: 'step' }, 7))).status, 409);
-    assert.equal((await api.POST(request({ type: 'reset' }, 8))).status, 200);
-    assert.deepEqual((await (await api.GET()).json()).world.settlement, construction.createSettlement());
-  } finally { close(); }
+
+
+test("the shared clock preserves remainders, backlog and deterministic history", () => {
+  const start = 100000;
+  const initial = engine.createWorld(4173, start);
+  const now = start + 1000 * engine.CLOCK_STEP_MS + 1234;
+  let partial = engine.advanceOffline(initial, now, 300).world;
+  assert.equal(partial.tick, 300); assert.equal(engine.pendingSteps(partial, now), 700);
+  while (engine.pendingSteps(partial, now)) partial = engine.advanceOffline(partial, now, 300).world;
+  const complete = engine.advanceOffline(initial, now, 1000).world;
+  assert.deepEqual(partial, complete);
+  assert.equal(partial.lastActiveAt, now - 1234);
+  assert.equal(engine.advanceOffline(partial, now).summary, undefined);
+  assert.equal(initial.tick, 0);
+  assert.equal(engine.advanceOffline(partial, start - 1).world.lastActiveAt, partial.lastActiveAt, "clock rollback must not replay time");
 });
-test('resident positions move with activities and stay inside the visible habitat', () => {
-  let world = engine.createWorld();
-  const start = Object.fromEntries(world.residents.map(resident => [resident.id, resident.position]));
-  for (let i = 0; i < 8; i++) world = engine.evolveWorld(world, { type: 'step' });
-  assert.ok(world.residents.some(resident => resident.position.x !== start[resident.id].x || resident.position.y !== start[resident.id].y));
-  for (const resident of world.residents) {
-    assert.ok(resident.position.x >= 8 && resident.position.x <= 92);
-    assert.ok(resident.position.y >= 17 && resident.position.y <= 79);
+test("a full day at 4x fits one cron budget and still has bounded memory", context => {
+  const world = engine.createWorld(4173, 100000); world.clock.speed = 4;
+  const start = performance.now();
+  const advanced = engine.advanceOffline(world, 100000 + 86400000, 60000).world;
+  context.diagnostic("Full-day catch-up: " + Math.round(performance.now() - start) + "ms");
+  assert.equal(engine.pendingSteps(advanced, 100000 + 86400000), 0);
+  assert.equal(advanced.tick, Math.floor(86400000 / (6500 / 4)));
+  assert.ok(advanced.chronicle.length <= 240);
+  for (const resident of advanced.residents) assert.ok(resident.memories.length <= 80);
+  assert.ok(advanced.settlement.built.bridge > 10);
+});
+test("new councils wait for rest and emergencies instead of consuming those events", () => {
+  const initial = engine.createWorld(); initial.settlement.resources = { biomass: 100, salvage: 100, insight: 100 };
+  initial.residents[0].energy = 0;
+  const rested = engine.evolveWorld(initial, { type: "step" });
+  assert.equal(rested.settlement.project, null); assert.ok(rested.residents[0].energy > 0);
+  for (const event of ["rain", "relic", "blackout"]) {
+    const ready = engine.createWorld(); ready.settlement.resources = { biomass: 100, salvage: 100, insight: 100 };
+    const next = engine.evolveWorld(ready, { type: "event", event });
+    assert.equal(next.settlement.decision, null);
+    assert.ok(next.residents.some(resident => resident.activity !== ready.residents.find(old => old.id === resident.id).activity));
   }
 });
-test('offline catch-up advances a bounded number of cycles and reports what happened', () => {
-  const start = 1_700_000_000_000;
-  const initial = engine.createWorld(4173, start);
-  const short = engine.advanceOffline(initial, start + engine.OFFLINE_STEP_MS * 3 + 1000);
-  assert.equal(short.summary.steps, 3); assert.equal(short.world.tick, 3);
-  assert.equal(short.world.lastActiveAt, start + engine.OFFLINE_STEP_MS * 3 + 1000);
-  const long = engine.advanceOffline(engine.createWorld(4173, start), start + engine.OFFLINE_STEP_MS * (engine.MAX_OFFLINE_STEPS + 50));
-  assert.equal(long.summary.steps, engine.MAX_OFFLINE_STEPS);
+test("version 1, 2 and 3 saves preserve history and migrate once under CAS", async () => {
+  for (const version of [1, 2, 3]) {
+    const { storage, sqlite, close } = apiHarness();
+    try {
+      const old = engine.evolveWorld(engine.createWorld(), { type: "event", event: "relic" });
+      old.version = version;
+      for (const key of ["epoch", "clock", "actionRevision", "councilsMade"]) delete old[key];
+      for (const resident of old.residents) { delete resident.district; delete resident.carrying; if (version < 3) delete resident.position; }
+      if (version === 1) delete old.settlement;
+      if (version === 2) delete old.settlement.decision;
+      sqlite.prepare("INSERT INTO habitats (id, state, revision) VALUES (?, ?, ?)").run("main", JSON.stringify(old), 7);
+      const loaded = await storage.readHabitat(100000);
+      assert.equal(loaded.revision, 8); assert.equal(loaded.world.version, 4);
+      assert.equal(loaded.world.tick, old.tick); assert.equal(loaded.world.lastActiveAt, 100000);
+      assert.deepEqual(loaded.world.chronicle, old.chronicle);
+      assert.deepEqual(loaded.world.residents[0].memories, old.residents[0].memories);
+      assert.equal((await storage.readHabitat(100000)).revision, 8);
+      const saved = JSON.parse(sqlite.prepare("SELECT state FROM habitats WHERE id = ?").get("main").state);
+      assert.equal(saved.version, 4);
+    } finally { close(); }
+  }
 });
-test('API stores the world in Vercel Blob and reloads it with the same revision', async () => {
-  const { api, close } = apiHarness();
+test("simultaneous observers advance one clock; simultaneous commands have one winner", async () => {
+  const { storage, close } = apiHarness();
   try {
-    const initial = await (await api.GET()).json(); assert.equal(initial.revision, 0);
-    const changed = await api.POST(request({ type: 'event', event: 'relic' }));
-    assert.equal(changed.status, 200);
-    const saved = await changed.json(), loaded = await (await api.GET()).json();
-    assert.equal(loaded.revision, 1); assert.deepEqual(loaded.world, saved.world);
-    assert.ok(loaded.world.discoveries > 0);
+    await storage.readHabitat(100000);
+    const reads = await Promise.all(Array.from({ length: 8 }, () => storage.readHabitat(113000)));
+    assert.ok(reads.every(result => result.world.tick === 2));
+    const actions = await Promise.all([storage.updateHabitat({ type: "step" }, 0, 113000), storage.updateHabitat({ type: "step" }, 0, 113000)]);
+    assert.equal(actions.filter(result => !result.conflict).length, 1);
+    const current = await storage.readHabitat(113000);
+    assert.equal(current.world.tick, 3); assert.equal(current.world.actionRevision, 1);
+    assert.equal((await storage.updateHabitat({ type: "reset" }, 0, 113000)).conflict, true);
   } finally { close(); }
 });
-test('concurrent and stale actions cannot overwrite newer memories', async () => {
-  const { api, close } = apiHarness();
+test("clock writes do not invalidate owner actions and paused time never catches up", async () => {
+  const { storage, close } = apiHarness();
   try {
-    await api.GET();
-    const responses = await Promise.all([api.POST(request({ type: 'step' })), api.POST(request({ type: 'step' }))]);
-    assert.deepEqual(responses.map(r => r.status).sort(), [200, 409]);
-    const loaded = await (await api.GET()).json(); assert.equal(loaded.revision, 1); assert.equal(loaded.world.tick, 1);
-    const stale = await api.POST(request({ type: 'reset' }, 0)); assert.equal(stale.status, 409);
-    assert.equal((await (await api.GET()).json()).revision, 1);
+    await storage.readHabitat(100000);
+    await storage.readHabitat(113000);
+    const paused = await storage.updateHabitat({ type: "playback", running: false, speed: 2 }, 0, 113000);
+    assert.equal(paused.conflict, false); assert.equal(paused.world.tick, 2);
+    assert.equal((await storage.readHabitat(900000)).world.tick, 2);
+    const resumed = await storage.updateHabitat({ type: "playback", running: true, speed: 2 }, 1, 900000);
+    assert.equal(resumed.world.lastActiveAt, 900000);
+    assert.equal((await storage.readHabitat(903250)).world.tick, 3);
+    const reset = await storage.updateHabitat({ type: "reset" }, 2, 903250);
+    assert.equal(reset.world.tick, 0); assert.equal(reset.world.epoch, 903250);
+    assert.equal(reset.world.actionRevision, 3);
   } finally { close(); }
 });
-test('visitor mode is read-only through the visitor API path', async () => {
+test("API rejects visitors, spoofed modes, other users, cross-site writes and invalid actions", async () => {
   const { api, close } = apiHarness();
   try {
-    const visitor = await (await api.GET(new Request('https://habitat.test/api/habitat?mode=visitor'))).json();
-    assert.equal(visitor.mode, 'visitor');
-    const blocked = new Request('https://habitat.test/api/habitat?mode=visitor', { method: 'POST',
-      headers: { 'Content-Type': 'application/json', Origin: 'https://habitat.test' },
-      body: JSON.stringify({ action: { type: 'step' }, revision: visitor.revision }) });
-    assert.equal((await api.POST(blocked)).status, 403);
-    assert.equal((await (await api.GET()).json()).world.tick, visitor.world.tick);
+    assert.equal((await (await api.GET(getRequest({}))).json()).mode, "visitor");
+    assert.equal((await api.POST(request({ type: "reset" }, 0, {}, "?mode=owner"))).status, 403);
+    assert.equal((await api.POST(request({ type: "reset" }, 0, { ...OWNER, "oai-authenticated-user-email": "friend@example.test" }))).status, 403);
+    assert.equal((await api.POST(request({ type: "reset" }, 0, OWNER, "?mode=visitor"))).status, 403);
+    assert.equal((await api.POST(request({ type: "step" }, 0, { ...OWNER, Origin: "https://elsewhere.test" }))).status, 403);
+    assert.equal((await api.POST(request({ type: "playback", running: true, speed: 100 }))).status, 400);
+    assert.equal((await api.POST(request({ type: "step" }, -1))).status, 400);
+    assert.equal((await api.POST(request({ type: "event", event: "rain" }))).status, 200);
+    assert.equal((await api.POST(request({ type: "event", event: "relic" }, 1))).status, 422);
+    const saved = await (await api.GET(getRequest())).json();
+    assert.equal(saved.mode, "owner"); assert.equal(saved.world.weather, "rain");
+    assert.equal((await api.POST(request({ type: "reset" }, 1))).status, 200);
   } finally { close(); }
 });
-test('invalid input, cross-site writes and overlapping interventions fail safely', async () => {
-  const { api, close } = apiHarness();
-  try {
-    assert.equal((await api.POST(request({ type: 'event', event: 'unknown' }))).status, 400);
-    assert.equal((await api.POST(request({ type: 'step' }, -1))).status, 400);
-    assert.equal((await api.POST(request({ type: 'step' }, 0, { Origin: 'https://elsewhere.test' }))).status, 403);
-    assert.equal((await api.POST(request({ type: 'event', event: 'rain' }))).status, 200);
-    assert.equal((await api.POST(request({ type: 'event', event: 'relic' }, 1))).status, 422);
-    const after = await (await api.GET()).json(); assert.equal(after.revision, 1); assert.equal(after.world.weather, 'rain');
-    assert.equal((await api.POST(request({ type: 'reset' }, 1))).status, 200);
-    const reset = await (await api.GET()).json(); assert.equal(reset.revision, 2); assert.equal(reset.world.tick, 0); assert.equal(reset.world.totalMemories, 3);
-  } finally { close(); }
+test("Vercel never trusts identity headers; owner cookies expire and secret rotation revokes them", async () => {
+  const configured = { HABITAT_OWNER_KEY: secret };
+  const plainRuntime = loadModule("db/runtime.ts");
+  assert.equal(plainRuntime.trustedOwner(getRequest(OWNER)), false);
+  const runtime = { ...plainRuntime, setting: name => configured[name] ?? "" };
+  const access = loadModule("lib/habitat/access.ts", { "@/db/runtime": runtime });
+  const now = Date.now();
+  assert.equal(await access.isOwner(getRequest(OWNER), now), false);
+  assert.equal(await access.verifyOwnerKey("wrong"), false);
+  assert.equal(await access.verifyOwnerKey(secret), true);
+  const setCookie = await access.ownerCookie(getRequest(), false, now);
+  assert.match(setCookie, /HttpOnly/); assert.match(setCookie, /SameSite=Strict/); assert.match(setCookie, /Secure/);
+  const cookie = setCookie.split(";")[0];
+  assert.equal(await access.isOwner(getRequest({ cookie }), now), true);
+  assert.equal(await access.isOwner(getRequest({ cookie }, "?mode=visitor"), now), false);
+  assert.equal(await access.isOwner(getRequest({ cookie: cookie.replace(/\.[a-f0-9]+$/, "." + "0".repeat(64)) }), now), false);
+  assert.equal(await access.isOwner(getRequest({ cookie }), now + 8 * 86400000), false);
+  configured.HABITAT_OWNER_KEY = secret + "rotated";
+  assert.equal(await access.isOwner(getRequest({ cookie }), now), false);
+  configured.HABITAT_OWNER_KEY = "";
+  assert.equal(await access.isOwner(getRequest({ cookie }), now), false);
 });
+test("sign-in and cron endpoints fail closed and only accept their own credentials", async () => {
+  const runtime = { setting: name => name === "HABITAT_OWNER_KEY" ? secret : name === "CRON_SECRET" ? secret + "-cron" : "", trustedOwner: () => false, ownerSignInUrl: () => undefined };
+  const access = loadModule("lib/habitat/access.ts", { "@/db/runtime": runtime });
+  const auth = loadModule("app/api/access/route.ts", { "@/lib/habitat/access": access });
+  const login = key => new Request("https://habitat.test/api/access", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
+  assert.equal((await auth.POST(login("wrong"))).status, 401);
+  assert.equal((await auth.POST(login(secret))).status, 200);
+  let calls = 0;
+  const cron = loadModule("app/api/cron/route.ts", { "@/db/runtime": runtime, "@/lib/habitat/access": access, "@/db/habitat": { readHabitat: async () => { calls++; return { world: { tick: 1 }, pendingSteps: 0 }; } } });
+  assert.equal((await cron.GET(new Request("https://habitat.test/api/cron"))).status, 401);
+  assert.equal((await cron.GET(new Request("https://habitat.test/api/cron", { headers: { authorization: "Bearer " + secret } }))).status, 401);
+  assert.equal(calls, 0);
+  assert.equal((await cron.GET(new Request("https://habitat.test/api/cron", { headers: { authorization: "Bearer " + secret + "-cron" } }))).status, 200);
+  assert.equal(calls, 1);
+});
+test("private Blob driver requires conditional writes and never treats a storage failure as an empty world", async () => {
+  class Precondition extends Error {}
+  let saved = null, counter = 0, readOptions, writeOptions, broken = false;
+  const sdk = {
+    BlobPreconditionFailedError: Precondition,
+    async get(_path, options) {
+      readOptions = options;
+      if (broken) return { statusCode: 500 };
+      if (!saved) return null;
+      return { statusCode: 200, stream: new Response(JSON.stringify(saved.data)).body, blob: { etag: saved.etag } };
+    },
+    async put(_path, data, options) {
+      writeOptions = options;
+      if (saved && (!options.allowOverwrite || options.ifMatch !== saved.etag)) throw new Precondition();
+      const etag = "etag-" + ++counter; saved = { data: JSON.parse(data), etag }; return { etag };
+    },
+  };
+  const { habitatStore } = loadModule("db/storage-driver.ts", { "@vercel/blob": sdk });
+  const initial = await habitatStore.initialize(engine.createWorld());
+  const next = engine.evolveWorld(initial.world, { type: "step" });
+  const winner = await habitatStore.compareAndSwap(initial, next);
+  assert.equal(winner.revision, 1); assert.equal(writeOptions.ifMatch, initial.etag);
+  assert.equal(writeOptions.access, "private");
+  assert.equal(await habitatStore.compareAndSwap(initial, engine.createWorld()), null);
+  const loaded = await habitatStore.read(); assert.deepEqual(loaded.world, next);
+  assert.equal(readOptions.useCache, false);
+  broken = true; await assert.rejects(() => habitatStore.read(), /incomplete/);
+});
+test("return summaries belong to each browser and ignore resets or corrupt local storage", () => {
+  const initial = engine.createWorld(4173, 100000);
+  const marker = visits.visitMarker(initial, 100000);
+  const advanced = engine.advanceOffline(initial, 100000 + 500 * 6500, 500).world;
+  const summary = visits.summarizeVisit(marker, advanced, 100000 + 500 * 6500);
+  assert.equal(summary.steps, 500); assert.ok(summary.structuresBuilt > 0); assert.ok(summary.decisionsMade > 0);
+  assert.deepEqual(summary, visits.summarizeVisit(marker, advanced, 100000 + 500 * 6500), "another reader cannot consume this summary");
+  assert.equal(visits.parseVisit("bad JSON"), null);
+  assert.equal(visits.parseVisit('{"at":"yesterday"}'), null);
+  const reset = engine.createWorld(4173, 200000);
+  assert.equal(visits.summarizeVisit(marker, reset, 10000000), null);
+});
+

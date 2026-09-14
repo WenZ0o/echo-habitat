@@ -1,0 +1,10 @@
+import { spawnSync } from "node:child_process";
+import { readExecutionProfile } from "./execution-profile.mjs";
+const platform = !process.env.VERCEL && (process.env.SITES_MANAGED_LINUX_CONTAINER === "1" || readExecutionProfile() === "managed-linux") ? "sites" : "vercel";
+const target = "build:" + platform;
+const result = spawnSync("pnpm", [target], { stdio: "inherit", shell: false });
+if (result.error) throw result.error;
+if (result.status !== 0) process.exit(result.status ?? 1);
+const check = spawnSync(process.execPath, ["scripts/check-build-target.mjs", platform], { stdio: "inherit" });
+if (check.error) throw check.error;
+process.exit(check.status ?? 1);

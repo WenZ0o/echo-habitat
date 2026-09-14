@@ -16,8 +16,7 @@ import type {
   BlueprintId,
   ChronicleEntry,
   CouncilDecision,
-  LegacyWorld,
-  LegacyWorldV2,
+  StoredWorld,
   MemoryKind,
   OfflineSummary,
   Place,
@@ -30,8 +29,8 @@ import type {
 } from "./types";
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
-export const OFFLINE_STEP_MS = 5 * 60 * 1000;
-export const MAX_OFFLINE_STEPS = 96;
+export const CLOCK_STEP_MS = 6500;
+export const MAX_OFFLINE_STEPS = 300;
 
 function defaultPosition(id: ResidentId): Position {
   const place = PLACES[PROFILES[id].home];
@@ -46,10 +45,14 @@ export function createWorld(seed = 4173, lastActiveAt = 0): World {
     echo: "The water remembers a sky I have never seen.",
   };
   return {
-    version: 3,
+    version: 4,
+    epoch: lastActiveAt,
     tick: 0,
     seed,
     lastActiveAt,
+    clock: { running: true, speed: 1 },
+    actionRevision: 0,
+    councilsMade: 0,
     power: 84,
     growth: 62,
     discoveries: 0,
@@ -61,6 +64,8 @@ export function createWorld(seed = 4173, lastActiveAt = 0): World {
       id,
       location: PROFILES[id].home,
       position: defaultPosition(id),
+      district: 0,
+      carrying: null,
       energy: 88 - index * 7,
       mood: 78 + index * 3,
       progress: 0,
@@ -80,29 +85,18 @@ export function createWorld(seed = 4173, lastActiveAt = 0): World {
   };
 }
 
-// Older saves retain their clock, residents, memories, relationships and chronicle.
-// Version 3 adds map positions, council decisions and a real-time activity marker.
-export function upgradeWorld(saved: World | LegacyWorld | LegacyWorldV2, now = 0): World {
-  if (saved.version === 3) return saved;
-  if (saved.version === 2) {
-    return {
-      ...saved,
-      version: 3,
-      lastActiveAt: now,
-      residents: saved.residents.map(resident => ({ ...resident, position: defaultPosition(resident.id) })),
-      settlement: { ...saved.settlement, decision: null },
-    };
-  }
-  if (saved.version === 1) {
-    return {
-      ...saved,
-      version: 3,
-      lastActiveAt: now,
-      residents: saved.residents.map(resident => ({ ...resident, position: defaultPosition(resident.id) })),
-      settlement: createSettlement(),
-    };
-  }
-  throw new Error("This habitat save uses an unsupported version.");
+// Start the faster shared clock at migration time; retain all prior history.
+export function upgradeWorld(saved: StoredWorld, now = 0): World {
+  if (saved.version === 4) return saved;
+  if (![1, 2, 3].includes(saved.version)) throw new Error("This habitat save uses an unsupported version.");
+  const settlement = saved.version === 1 ? createSettlement() : { ...saved.settlement, decision: saved.version === 3 ? saved.settlement.decision : null };
+  return {
+    ...saved, version: 4, epoch: now, lastActiveAt: now,
+    clock: { running: true, speed: 1 }, actionRevision: 0,
+    councilsMade: Object.values(settlement.built).reduce((a, b) => a + b, 0) + (settlement.project ? 1 : 0),
+    residents: saved.residents.map(resident => ({ ...resident, position: "position" in resident ? resident.position : defaultPosition(resident.id), district: 0, carrying: null })),
+    settlement,
+  };
 }
 
 function random(world: World) {
@@ -143,6 +137,8 @@ function moveResident(resident: Resident, place: Place, tick: number, target?: P
   const center = target ?? PLACES[place];
   const offset = motionOffset(resident.id, tick, scale);
   resident.location = place;
+  resident.district = 0;
+  resident.carrying = null;
   resident.position = {
     x: Math.max(8, Math.min(92, center.x + offset.x)),
     y: Math.max(17, Math.min(79, center.y + offset.y)),
@@ -163,6 +159,7 @@ function scoreCandidate(world: World, resident: Resident, id: BlueprintId) {
 
 function holdCouncil(world: World, candidates: BlueprintId[]): CouncilDecision {
   const votes = {} as Record<ResidentId, BlueprintId>;
+  const reasons = {} as Record<ResidentId, string>;
   for (const resident of world.residents) {
     let best = candidates[0];
     let bestScore = -Infinity;
@@ -174,6 +171,12 @@ function holdCouncil(world: World, candidates: BlueprintId[]): CouncilDecision {
       }
     }
     votes[resident.id] = best;
+    reasons[resident.id] = best === "garden" ? `Growth is at ${world.growth}%. More roots will keep it steady.`
+      : best === "solar" ? `Power is at ${world.power}%. A little independence from repairs would help.`
+      : best === "cistern" ? `We have ${world.settlement.resources.biomass} biomass. Let us make gathering easier.`
+      : best === "workshop" ? `We have ${world.settlement.resources.salvage} salvage. A shared workbench will make more of it.`
+      : best === "lookout" ? "A higher view will help us understand the ground ahead."
+      : "This district is ready. It is time to reach the next island.";
   }
   const counts = new Map<BlueprintId, number>();
   for (const vote of Object.values(votes)) counts.set(vote, (counts.get(vote) ?? 0) + 1);
@@ -189,13 +192,14 @@ function holdCouncil(world: World, candidates: BlueprintId[]): CouncilDecision {
     district: districtOf(world),
     candidates,
     votes,
+    reasons,
     chosen,
-    summary: `${supporters.join(" and ")} ${supporters.length === 1 ? "backs" : "back"} ${choice.name.toLowerCase()}. The group agrees to make it their next shared priority.`,
+    summary: `${supporters.join(" and ")} ${supporters.length === 1 ? "backs" : "back"} ${choice.name.toLowerCase()}. ${tied.length > 1 ? "The votes tie; they draw lots among the tied plans." : "The majority decides their next shared priority."}`,
   };
 }
 
 function planConstruction(world: World): boolean {
-  if (world.settlement.project || world.intervention?.kind === "blackout") return false;
+  if (world.settlement.project || world.intervention || world.power < 45 || world.residents.some(resident => resident.energy < 27)) return false;
   const district = districtOf(world);
   const affordable = districtBlueprints(world).filter(blueprint => {
     const cost = blueprintCost(blueprint, district);
@@ -205,6 +209,7 @@ function planConstruction(world: World): boolean {
 
   const decision = holdCouncil(world, affordable.map(item => item.id));
   world.settlement.decision = decision;
+  world.councilsMade += 1;
   const blueprint = BLUEPRINTS.find(item => item.id === decision.chosen)!;
   const cost = blueprintCost(blueprint, district);
   for (const resource of RESOURCE_IDS) world.settlement.resources[resource] -= cost[resource];
@@ -224,6 +229,7 @@ function planConstruction(world: World): boolean {
     resident.thought = resident.id === blueprint.lead
       ? `We chose ${blueprint.name.toLowerCase()}. I will help turn the idea into something we can stand beside.`
       : `I voted for ${vote.name.toLowerCase()}. We chose together, and I am ready to help.`;
+    remember(world, resident, `At the council for district ${district}, I voted for ${vote.name.toLowerCase()}. ${decision.reasons?.[resident.id]} We chose ${blueprint.name.toLowerCase()}.`, "building");
   }
   record(world, {
     actor: "world",
@@ -245,6 +251,8 @@ function buildOrGather(world: World, resident: Resident): boolean {
     project.work += amount;
     project.contributions[resident.id] += amount;
     moveResident(resident, blueprint.place, world.tick, { x: blueprint.x, y: blueprint.y }, 0.55);
+    resident.district = project.district;
+    resident.carrying = resident.id === "moss" ? "biomass" : resident.id === "lux" ? "salvage" : "insight";
     resident.energy = clamp(resident.energy - 2);
     resident.progress += 1;
     resident.activity = `Building ${blueprint.name.toLowerCase()}`;
@@ -267,6 +275,7 @@ function buildOrGather(world: World, resident: Resident): boolean {
   if (before >= RESOURCE_CAP) return false;
   addResource(world, resource, amount);
   moveResident(resident, PROFILES[resident.id].home, world.tick, undefined, 1.2);
+  resident.carrying = resource;
   resident.progress += 1;
   resident.activity = { moss: "Gathering seeds and fibres", lux: "Recovering useful parts", echo: "Mapping unfamiliar ground" }[resident.id];
   resident.thought = {
@@ -437,9 +446,14 @@ function decide(world: World, resident: Resident) {
   record(world, { actor: resident.id, title: resident.activity, text: resident.thought, kind: resident.id === "echo" ? "discovery" : "environment" });
 }
 
-export function evolveWorld(previous: World | LegacyWorld | LegacyWorldV2, action: WorldAction): World {
+export function evolveWorld(previous: StoredWorld, action: WorldAction): World {
   if (action.type === "reset") return createWorld();
   const world = structuredClone(upgradeWorld(previous));
+  if (action.type === "playback") { world.clock = { running: action.running, speed: action.speed }; return world; }
+  return stepInPlace(world, action);
+}
+
+function stepInPlace(world: World, action: Extract<WorldAction, { type: "step" | "event" }>): World {
   world.tick += 1;
   world.power = clamp(world.power - 3 + Math.min(3, world.settlement.built.solar));
   world.growth = clamp(world.growth - 1 + Math.min(2, world.settlement.built.garden));
@@ -483,39 +497,26 @@ export function evolveWorld(previous: World | LegacyWorld | LegacyWorldV2, actio
   return world;
 }
 
-export function advanceOffline(previous: World | LegacyWorld | LegacyWorldV2, now: number) {
-  let world = structuredClone(upgradeWorld(previous, now));
-  if (!world.lastActiveAt || now <= world.lastActiveAt) {
-    world.lastActiveAt = now;
-    return { world, summary: undefined as OfflineSummary | undefined };
-  }
-  const elapsedMs = now - world.lastActiveAt;
-  const steps = Math.min(MAX_OFFLINE_STEPS, Math.floor(elapsedMs / OFFLINE_STEP_MS));
-  if (steps <= 0) return { world, summary: undefined as OfflineSummary | undefined };
+export function pendingSteps(world: World, now: number) {
+  return world.clock.running ? Math.max(0, Math.floor((now - world.lastActiveAt) / (CLOCK_STEP_MS / world.clock.speed))) : 0;
+}
 
+export function advanceOffline(previous: StoredWorld, now: number, limit = MAX_OFFLINE_STEPS) {
+  const world = structuredClone(upgradeWorld(previous, now));
+  const steps = Math.min(Math.max(0, Math.floor(limit)), pendingSteps(world, now));
+  if (steps === 0) return { world, summary: undefined as OfflineSummary | undefined };
   const fromTick = world.tick;
   const structuresBefore = Object.values(world.settlement.built).reduce((sum, value) => sum + value, 0);
-  const previousDecisionId = world.settlement.decision?.id;
-  let decisionsMade = 0;
-  for (let index = 0; index < steps; index++) {
-    const beforeDecision = world.settlement.decision?.id;
-    world = evolveWorld(world, { type: "step" });
-    if (world.settlement.decision?.id && world.settlement.decision.id !== beforeDecision) decisionsMade += 1;
-  }
-  world.lastActiveAt = now;
-  const structuresBuilt = Object.values(world.settlement.built).reduce((sum, value) => sum + value, 0) - structuresBefore;
-  if (!decisionsMade && previousDecisionId !== world.settlement.decision?.id && world.settlement.decision) decisionsMade = 1;
-  const highlights = world.chronicle
-    .filter(entry => entry.tick > fromTick && (entry.kind === "building" || entry.kind === "discovery"))
-    .slice(0, 5);
+  const decisionsBefore = world.councilsMade;
+  const elapsedMs = steps * CLOCK_STEP_MS / world.clock.speed;
+  for (let index = 0; index < steps; index++) stepInPlace(world, { type: "step" });
+  // Preserve both the sub-cycle remainder and any backlog after the work budget.
+  world.lastActiveAt += elapsedMs;
   const summary: OfflineSummary = {
-    elapsedMs,
-    steps,
-    fromTick,
-    toTick: world.tick,
-    structuresBuilt,
-    decisionsMade,
-    highlights,
+    elapsedMs, steps, fromTick, toTick: world.tick,
+    structuresBuilt: Object.values(world.settlement.built).reduce((sum, value) => sum + value, 0) - structuresBefore,
+    decisionsMade: world.councilsMade - decisionsBefore,
+    highlights: world.chronicle.filter(entry => entry.tick > fromTick && (entry.title.includes("made together") || entry.actor === "world" || entry.kind === "discovery")).slice(0, 5),
   };
   return { world, summary };
 }

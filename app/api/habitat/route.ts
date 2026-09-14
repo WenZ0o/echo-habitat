@@ -1,19 +1,21 @@
 import { z } from "zod";
 import { readHabitat, updateHabitat } from "@/db/habitat";
+import { accessOptions, isOwner, sameOrigin } from "@/lib/habitat/access";
 
 const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("step") }).strict(),
   z.object({ type: z.literal("event"), event: z.enum(["rain", "relic", "blackout"]) }).strict(),
   z.object({ type: z.literal("reset") }).strict(),
+  z.object({ type: z.literal("playback"), running: z.boolean(), speed: z.union([z.literal(1), z.literal(2), z.literal(4)]) }).strict(),
 ]);
-const requestSchema = z.object({ revision: z.number().int().nonnegative(), action: actionSchema }).strict();
-const headers = { "Cache-Control": "no-store" };
+const requestSchema = z.object({ actionRevision: z.number().int().nonnegative().safe(), action: actionSchema }).strict();
+const headers = { "Cache-Control": "no-store", Vary: "Cookie" };
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
     const result = await readHabitat();
-    const mode = request && new URL(request.url).searchParams.get("mode") === "visitor" ? "visitor" : "owner";
-    return Response.json({ ...result, mode }, { headers });
+    const mode = await isOwner(request) ? "owner" : "visitor";
+    return Response.json({ ...result, mode, access: accessOptions() }, { headers });
   } catch (error) {
     console.error("Habitat read failed", error);
     return Response.json({ error: "The habitat could not be loaded. Please try again." }, { status: 503, headers });
@@ -21,13 +23,10 @@ export async function GET(request?: Request) {
 }
 
 export async function POST(request: Request) {
-  if (new URL(request.url).searchParams.get("mode") === "visitor") {
-    return Response.json({ error: "Visitor mode is read-only." }, { status: 403, headers });
-  }
-  const origin = request.headers.get("origin");
-  if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== new URL(request.url).origin)) {
+  if (!sameOrigin(request)) {
     return Response.json({ error: "This action must come from the habitat." }, { status: 403, headers });
   }
+  if (!await isOwner(request)) return Response.json({ error: "Only the signed-in owner can change the habitat." }, { status: 403, headers });
   if (!request.headers.get("content-type")?.includes("application/json")) {
     return Response.json({ error: "Expected a JSON action." }, { status: 415, headers });
   }
@@ -38,13 +37,13 @@ export async function POST(request: Request) {
   catch { return Response.json({ error: "Invalid action." }, { status: 400, headers }); }
   if (!parsed.success) return Response.json({ error: "Invalid action." }, { status: 400, headers });
   try {
-    const result = await updateHabitat(parsed.data.action, parsed.data.revision);
-    return Response.json(result, { status: result.conflict ? 409 : 200, headers });
+    const result = await updateHabitat(parsed.data.action, parsed.data.actionRevision);
+    return Response.json({ ...result, mode: "owner", access: accessOptions() }, { status: result.conflict ? 409 : 200, headers });
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Wait for")) {
+    if (error instanceof Error && (error.message.startsWith("Wait for") || error.message.startsWith("The habitat is catching up"))) {
       return Response.json({ error: error.message }, { status: 422, headers });
     }
     console.error("Habitat save failed", error);
-    return Response.json({ error: "Your change could not be saved. The habitat is paused; try again." }, { status: 503, headers });
+    return Response.json({ error: "Your change could not be confirmed. Reconnect to see the saved state before trying again." }, { status: 503, headers });
   }
 }

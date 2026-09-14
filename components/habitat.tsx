@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowUpRight, BatteryMedium, BookOpen, Check, ChevronRight, CircleHelp, CloudRain, Compass, Copy, Eye, Flower2, Heart, Leaf, Lock, MapPin, Orbit, Pause, Play, Radio, RotateCcw, SkipForward, Sparkles, Sprout, Sun, Zap, ZapOff } from "lucide-react";
+import { ArrowUpRight, BatteryMedium, BookOpen, Check, CircleHelp, CloudRain, Copy, Eye, Flower2, Heart, Leaf, Lock, MapPin, Orbit, Pause, Play, Radio, RotateCcw, SkipForward, Sparkles, Sprout, Sun, Zap, ZapOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { createWorld } from "@/lib/habitat/engine";
-import { BuildingMarkers, ConstructionBoard, DistrictExpansions, habitatStage } from "@/components/construction-board";
-import { districtOf } from "@/lib/habitat/construction";
+import { ConstructionBoard } from "@/components/construction-board";
+import { WorldMap } from "@/components/world-map";
+import { OwnerAccess } from "@/components/owner-access";
+import { parseVisit, summarizeVisit, visitMarker, VISIT_KEY, type LastVisit } from "@/lib/habitat/return-visit";
 import { EVENT_LABELS, PLACES, PROFILES, RESIDENT_IDS, moodLabel, worldTime } from "@/lib/habitat/residents";
 import type { ChronicleEntry, Intervention, OfflineSummary, Resident, ResidentId, WorldAction, WorldResponse } from "@/lib/habitat/types";
 
@@ -46,96 +48,113 @@ function formatAway(ms: number) {
 type Tool = { name: string; title: string; description: string; inputSchema: object; annotations: { readOnlyHint: boolean }; execute: (input: unknown) => unknown | Promise<unknown> };
 type ModelContext = { registerTool: (tool: Tool, options: { signal: AbortSignal }) => void | Promise<void> };
 
-export default function Habitat({ visitorMode = false }: { visitorMode?: boolean }) {
+export default function Habitat({ visitorMode: forceVisitor = false }: { visitorMode?: boolean }) {
   const [data, setData] = useState<WorldResponse>(() => ({ world: createWorld(), revision: 0 }));
   const [selected, setSelected] = useState<ResidentId>("moss");
   const [loaded, setLoaded] = useState(false), [busy, setBusy] = useState(false);
-  const [playing, setPlaying] = useState(!visitorMode), [speed, setSpeed] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [offlineSummary, setOfflineSummary] = useState<OfflineSummary | null>(null);
-  const [copied, setCopied] = useState(false);
-  const dataRef = useRef(data), loadedRef = useRef(false), lock = useRef(false);
-  const accept = useCallback((next: WorldResponse) => { dataRef.current = next; setData(next); }, []);
+  const [copied, setCopied] = useState(false), [shareUrl, setShareUrl] = useState("");
+  const dataRef = useRef(data), loadedRef = useRef(false), lock = useRef(false), reading = useRef(false);
+  const previousVisit = useRef<LastVisit | null>(null), active = useRef(false);
+  const visitorMode = forceVisitor || data.mode !== "owner";
+  const playing = data.world.clock.running, speed = data.world.clock.speed;
+  const catchingUp = (data.pendingSteps ?? 0) > 0;
+
+  const saveVisit = useCallback(() => {
+    if (!loadedRef.current) return;
+    try { localStorage.setItem(VISIT_KEY, JSON.stringify(visitMarker(dataRef.current.world, Date.now()))); } catch { /* Storage is optional. */ }
+  }, []);
+  const restoreVisit = useCallback(() => {
+    try { previousVisit.current = parseVisit(localStorage.getItem(VISIT_KEY)); } catch { previousVisit.current = null; }
+  }, []);
+  const accept = useCallback((next: WorldResponse) => {
+    if (!active.current || (loadedRef.current && next.revision < dataRef.current.revision)) return;
+    dataRef.current = next; setData(next); setLoaded(true); loadedRef.current = true;
+    if (previousVisit.current) {
+      const summary = summarizeVisit(previousVisit.current, next.world, Date.now());
+      if (summary) setOfflineSummary(summary);
+      if (!next.pendingSteps) previousVisit.current = null;
+    }
+    if (!document.hidden && !next.pendingSteps) saveVisit();
+  }, [saveVisit]);
 
   const load = useCallback(async (quiet = false) => {
+    if (reading.current || lock.current) return;
+    reading.current = true;
     if (!quiet) setBusy(true);
-    setError(null);
     try {
-      const res = await fetch(`/api/habitat${visitorMode ? "?mode=visitor" : ""}`, { cache: "no-store" });
+      const res = await fetch("/api/habitat" + (forceVisitor ? "?mode=visitor" : ""), { cache: "no-store", signal: AbortSignal.timeout(20000) });
       const body = await res.json() as WorldResponse & { error?: string };
       if (!res.ok) throw new Error(body.error ?? "The habitat could not be loaded.");
-      if (!body.world || !Number.isInteger(body.revision)) throw new Error("The habitat returned an incomplete state. Please reconnect.");
+      if (!body.world?.clock || !Number.isInteger(body.revision)) throw new Error("The habitat returned an incomplete state. Please reconnect.");
       accept(body);
-      if (body.offline?.steps) setOfflineSummary(body.offline);
-      setLoaded(true);
-      loadedRef.current = true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Connection interrupted. Please try again.");
-      setPlaying(false);
+      if (active.current) setError(null);
+    } catch (cause) {
+      if (active.current) setError(cause instanceof Error && cause.name !== "TimeoutError" ? cause.message : "Connection interrupted. Reconnecting automatically…");
     } finally {
-      if (!quiet) setBusy(false);
+      reading.current = false;
+      if (active.current && !quiet) setBusy(false);
     }
-  }, [accept, visitorMode]);
+  }, [accept, forceVisitor]);
 
   const act = useCallback(async (action: WorldAction): Promise<WorldResponse> => {
-    if (visitorMode) throw new Error("Visitor mode is read-only.");
+    if (forceVisitor || dataRef.current.mode !== "owner") throw new Error("Only the owner can change the habitat.");
     if (!loadedRef.current) throw new Error("Wait for the habitat to load.");
     if (lock.current) throw new Error("A habitat action is already in progress.");
-    lock.current = true;
-    setBusy(true);
-    setError(null);
+    lock.current = true; setBusy(true); setError(null);
     try {
-      const res = await fetch("/api/habitat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: dataRef.current.revision, action }) });
+      const res = await fetch("/api/habitat", { method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(20000),
+        body: JSON.stringify({ actionRevision: dataRef.current.world.actionRevision, action }) });
       const body = await res.json() as WorldResponse & { error?: string };
       if (res.status === 409 && body.world) {
-        // Background simulation can occasionally race with a just-finished server write.
-        // A step is safe to resync silently; explicit owner actions still surface a conflict.
         accept(body);
-        if (action.type === "step") return body;
-        throw new Error("The habitat changed while that action was being saved. The latest state is loaded; try the action once more.");
+        throw new Error("Another owner action was saved first. The latest world is loaded; you can try again.");
       }
-      if (!res.ok) throw new Error(body.error ?? "Your change could not be saved.");
-      if (!body.world || !Number.isInteger(body.revision)) throw new Error("Your change could not be confirmed. Please reconnect.");
+      if (res.status === 403) accept({ ...dataRef.current, mode: "visitor" });
+      if (!res.ok) throw new Error(body.error ?? "Your change could not be confirmed.");
+      if (!body.world?.clock || !Number.isInteger(body.revision)) throw new Error("Reconnect to confirm your change.");
+      if (action.type === "reset") { previousVisit.current = null; setOfflineSummary(null); }
       accept(body);
       return body;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Connection interrupted. Please try again.");
-      setPlaying(false);
-      throw e;
-    } finally {
-      lock.current = false;
-      setBusy(false);
-    }
-  }, [accept, visitorMode]);
+    } catch (cause) {
+      setError(cause instanceof Error && cause.name !== "TimeoutError" ? cause.message : "Your change could not be confirmed. Reconnect before trying again.");
+      throw cause;
+    } finally { lock.current = false; setBusy(false); }
+  }, [accept, forceVisitor]);
   const invoke = (action: WorldAction) => { void act(action).catch(() => {}); };
 
-  useEffect(() => { void load(); }, [load]);
   useEffect(() => {
-    if (!loaded || visitorMode) return;
-    if (!playing) return;
-    const interval = setInterval(() => { if (!document.hidden && !lock.current) void act({ type: "step" }).catch(() => {}); }, 6500 / speed);
-    return () => clearInterval(interval);
-  }, [loaded, visitorMode, playing, speed, act]);
-  useEffect(() => {
-    if (!loaded || !visitorMode) return;
-    const interval = setInterval(() => { if (!document.hidden && !lock.current) void load(true); }, 15000);
-    return () => clearInterval(interval);
-  }, [loaded, visitorMode, load]);
+    active.current = true; restoreVisit();
+    let stopped = false, generation = 0, timer: ReturnType<typeof setTimeout>;
+    async function poll(run: number) {
+      if (!document.hidden && !lock.current) await load(loadedRef.current);
+      if (!stopped && run === generation) timer = setTimeout(() => { void poll(run); }, dataRef.current.pendingSteps ? 300 : Math.max(1800, 6500 / dataRef.current.world.clock.speed));
+    }
+    const visibility = () => {
+      generation += 1; clearTimeout(timer);
+      if (document.hidden) saveVisit();
+      else { restoreVisit(); void poll(generation); }
+    };
+    void poll(generation);
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("pagehide", saveVisit);
+    return () => { stopped = true; active.current = false; clearTimeout(timer); saveVisit(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", saveVisit); };
+  }, [load, restoreVisit, saveVisit]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: ModelContext }).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
-    const register = (tool: Tool) => { try { void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(e => console.warn("Habitat tool unavailable", e)); } catch (e) { console.warn("Habitat tool unavailable", e); } };
-    register({ name: "read_habitat", title: "Read the habitat", description: "Read current world conditions, residents, memories and relationships without changing the habitat.",
+    const register = (tool: Tool) => { try { void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch { /* Optional capability. */ } };
+    register({ name: "read_habitat", title: "Read the habitat", description: "Read the saved world, residents, memories, decisions and relationships.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true },
       execute(input) { if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object."); if (!loadedRef.current) throw new Error("Habitat is still loading."); return dataRef.current; } });
-    if (!visitorMode) register({ name: "introduce_habitat_event", title: "Introduce a habitat event", description: "Introduce rain, a relic or a blackout, advance the habitat one turn, and save the resulting state. Fails while another event is active.",
+    if (!visitorMode) register({ name: "introduce_habitat_event", title: "Introduce a habitat event", description: "Owner only. Introduce rain, a relic or a blackout, advance one turn and save. Fails while another event is active.",
       inputSchema: { type: "object", properties: { event: { type: "string", enum: ["rain", "relic", "blackout"] } }, required: ["event"], additionalProperties: false }, annotations: { readOnlyHint: false },
       async execute(input) {
-        if (!input || typeof input !== "object" || Object.keys(input).length !== 1 || !["rain", "relic", "blackout"].includes(String((input as {event: string}).event))) throw new Error("Choose rain, relic or blackout.");
+        if (!input || typeof input !== "object" || Object.keys(input).length !== 1 || !["rain", "relic", "blackout"].includes(String((input as { event: string }).event))) throw new Error("Choose rain, relic or blackout.");
         const next = await act({ type: "event", event: (input as { event: Intervention }).event });
-        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
         return { tick: next.world.tick, intervention: next.world.intervention, memories: next.world.totalMemories };
       } });
     return () => lifecycle.abort();
@@ -144,13 +163,14 @@ export default function Habitat({ visitorMode = false }: { visitorMode?: boolean
   const copyVisitorLink = async () => {
     const url = new URL(window.location.href);
     url.searchParams.set("mode", "visitor");
-    await navigator.clipboard.writeText(url.toString());
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url.toString()); setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch { setShareUrl(url.toString()); }
   };
 
-  const world = data.world, clock = worldTime(world.tick), stage = habitatStage(world);
-  const art = ["/habitat.png", "/habitat-growing.png", "/habitat-expanded.png"][stage];
+  const world = data.world, clock = worldTime(world.tick);
   const resident = world.residents.find(item => item.id === selected)!;
   const profile = PROFILES[selected];
   const remaining = world.intervention?.remaining ?? 0;
@@ -158,47 +178,37 @@ export default function Habitat({ visitorMode = false }: { visitorMode?: boolean
 
   return <Tabs defaultValue="observe" className="habitat-app">
     <header className="topbar">
-      <a className="brand" href={visitorMode ? "?mode=visitor" : "/"} aria-label="Echo Habitat home"><img src="/favicon.svg" width="37" height="37" alt="" /><span>ECHO<span className="brand-light">HABITAT</span></span><span className="version">03</span></a>
+      <a className="brand" href={visitorMode ? "?mode=visitor" : "/"} aria-label="Echo Habitat home"><img src="/favicon.svg" width="37" height="37" alt="" /><span>ECHO<span className="brand-light">HABITAT</span></span><span className="version">04</span></a>
       <TabsList variant="line" className="main-nav" aria-label="Main navigation"><TabsTrigger value="observe"><Eye size={16} />Observe</TabsTrigger><TabsTrigger value="chronicle"><BookOpen size={16} />Chronicle<span className="nav-count">{world.chronicle.length}</span></TabsTrigger></TabsList>
       <div className="header-right">
         {visitorMode ? <span className="visitor-mode-label"><Lock size={13}/>Visitor mode</span> : <button className="visitor-link-button" onClick={() => void copyVisitorLink()}><Copy size={13}/>{copied ? "Copied" : "Visitor link"}</button>}
+        {!forceVisitor && loaded && <OwnerAccess data={data} refresh={() => load()}/>}
         <span className="simulation-label">Life simulation</span>
-        <Dialog onOpenChange={open => { if (open && !visitorMode) setPlaying(false); }}><DialogTrigger asChild><button className="icon-button" aria-label="About this habitat"><CircleHelp size={19} /></button></DialogTrigger><DialogContent className="about-dialog"><DialogHeader><DialogTitle>A small world, unfolding.</DialogTitle><DialogDescription>ECHO HABITAT is an interactive life simulation. Three residents move, decide, remember and build together.</DialogDescription></DialogHeader><div className="about-body"><p>Select a resident to see their thoughts and memories. Their marker moves toward places, meetings and active construction sites as their priorities change.</p><p>Moss, Lux and Echo gather shared resources and hold a visible council before a new project begins. Building sites pass through foundation, frame and finishing stages, while completed bridges reveal new island fragments.</p><p>Closing the page no longer freezes the world. When someone returns, the server converts elapsed time into bounded simulation steps and reports the important things that happened while the habitat was unattended.</p><p>{visitorMode ? "You are viewing a read-only visitor link. You can inspect residents, memories and construction, but owner controls are disabled." : "Use Visitor link to copy a read-only URL for someone who only needs to watch the habitat."}</p></div></DialogContent></Dialog>
+        <Dialog><DialogTrigger asChild><button className="icon-button" aria-label="About this habitat"><CircleHelp size={19} /></button></DialogTrigger><DialogContent className="about-dialog"><DialogHeader><DialogTitle>A small world, unfolding.</DialogTitle><DialogDescription>ECHO HABITAT is an interactive life simulation. Three residents move, decide, remember and build together.</DialogDescription></DialogHeader><div className="about-body"><p>Select a resident to see their thoughts and memories. They travel between home, shared meetings and the district they are building. Their choices follow authored rules, individual needs and shared resources; this simulation does not use a language model.</p><p>Moss, Lux and Echo gather shared resources and hold a visible council before a new project begins. Building sites pass through foundation, frame and finishing stages, while completed bridges reveal new island fragments.</p><p>The shared clock keeps elapsed time even when nobody is here. The server catches up when the world is visited or its scheduled job runs. Pausing the clock stops progress for everyone. No elapsed cycles are discarded.</p><p>{visitorMode ? "You are viewing a read-only visitor link. You can inspect residents, memories and construction, but owner controls are disabled." : "Use Visitor link to copy a read-only URL for someone who only needs to watch the habitat."}</p></div></DialogContent></Dialog>
       </div>
     </header>
 
     <main className="main-shell">
       <div className="page-heading"><div><div className="eyebrow"><span className="tiny-line" />EXPERIMENT 001 · WORLD BUILDING</div><h1>A world of their own<span>.</span></h1><p>Three lives. Shared decisions. A world growing beyond its edges.</p></div><div className="world-clock"><span className="eyebrow">HABITAT TIME</span><div>Day {clock.day}<span>/</span><strong>{clock.time}</strong></div></div></div>
       {error && <div className="error-banner" role="alert"><span>{error}</span><button disabled={busy} onClick={() => void load()}>Reconnect</button></div>}
-      {offlineSummary && <div className="offline-banner" role="status"><div><Orbit size={18}/><span><strong>While the habitat was unattended</strong><small>{formatAway(offlineSummary.elapsedMs)} passed · {offlineSummary.steps} autonomous cycles · {offlineSummary.structuresBuilt} structures completed · {offlineSummary.decisionsMade} shared decisions</small></span></div><button onClick={() => setOfflineSummary(null)}>Dismiss</button></div>}
-      {visitorMode && <div className="visitor-banner"><Lock size={16}/><span><strong>Visitor mode</strong> — watch, inspect and read. Controls that change the shared habitat are disabled.</span></div>}
+      {offlineSummary && <div className="offline-banner" role="status"><div><Orbit size={18}/><span><strong>Since your last visit</strong><small>{formatAway(offlineSummary.elapsedMs)} passed · {offlineSummary.steps} cycles · {offlineSummary.structuresBuilt} structures completed · {offlineSummary.decisionsMade} shared decisions</small></span></div><button onClick={() => setOfflineSummary(null)}>Dismiss</button></div>}
+      {offlineSummary && offlineSummary.highlights.length > 0 && <details className="return-highlights"><summary>A few things that happened</summary>{offlineSummary.highlights.map(entry => <Entry key={entry.id} entry={entry}/>)}</details>}
+      {catchingUp && <div className="visitor-banner" role="status"><Orbit size={16}/>{data.pendingSteps?.toLocaleString()} cycles to catch up. Their history is being restored…</div>}
+      {shareUrl && <div className="visitor-banner"><label className="share-fallback">Copy this visitor link<input readOnly value={shareUrl} onFocus={event => event.target.select()}/></label><button onClick={() => setShareUrl("")}>Close</button></div>}
+      {visitorMode && loaded && <div className="visitor-banner"><Lock size={16}/><span><strong>Visitor mode</strong> — watch, inspect and read. Controls that change the shared habitat are disabled.</span></div>}
 
       <TabsContent value="observe" className="observe-view">
         <section className="world-column" aria-label="Habitat observation">
           <div className="world-panel">
-            <div className="world-toolbar"><div className="world-status"><span className={loaded && (visitorMode || playing) ? "status-dot running" : "status-dot"} />{!loaded ? "Connecting to habitat" : visitorMode ? "Observing the shared world" : playing ? "Life is unfolding" : "A moment of stillness"}</div>{visitorMode ? <span className="read-only-chip"><Lock size={12}/>Read only</span> : <div className="playback"><button onClick={() => setSpeed(value => value === 4 ? 1 : value * 2)} className="speed-button" aria-label={`Simulation speed ${speed} times. Click to change.`}>{speed}×</button><span className="control-divider"/><button className="icon-button" disabled={!loaded} onClick={() => setPlaying(value => !value)} aria-label={playing ? "Pause simulation" : "Play simulation"}>{playing ? <Pause size={16} /> : <Play size={16} />}</button><button className="icon-button" disabled={!loaded || busy} onClick={() => invoke({ type: "step" })} aria-label="Advance one step"><SkipForward size={17}/></button></div>}</div>
-            <div className={`world-scene ${world.weather === "rain" ? "raining" : ""} ${world.power < 35 ? "low-power" : ""}`}>
-              <img className="habitat-art" src={art} width="1536" height="1024" alt={stage === 2 ? "The expanded habitat with a garden, solar terrace, lookout, rain collector, workshop and a bridge to new land." : stage === 1 ? "The habitat has grown a cultivated garden, a solar terrace and a lookout beside its dome and pool." : "A miniature habitat under an open glass dome: a tree, a reflection pool and a glowing observatory on a floating island."} fetchPriority="high" />
-              <DistrictExpansions world={world}/>
-              <div className="scene-coordinate top-left">DISTRICT {String(districtOf(world)).padStart(2, "0")}<span>{Object.values(world.settlement.built).reduce((a, b) => a + b, 0)} STRUCTURES BUILT</span></div>
-              <span className="scene-corner corner-tl" aria-hidden="true"/><span className="scene-corner corner-br" aria-hidden="true"/>
-              <div className="weather-badge">{world.weather === "rain" ? <CloudRain size={15}/> : <Sun size={15}/>}<span>{world.weather === "rain" ? "Gentle rain" : "Clear skies"}</span></div>
-              <BuildingMarkers world={world}/>
-              {world.residents.map(item => {
-                const shift = stage === 2 ? (item.location === "pool" ? -3 : item.location === "grove" ? -4 : -5) : 0;
-                const x = item.position.x + shift;
-                const left = 50 + (x - 50) * (1.5 / 1.72);
-                return <button key={item.id} className={`world-marker ${selected === item.id ? "active" : ""}`} style={{ left: `${left}%`, top: `${item.position.y}%`, "--resident": PROFILES[item.id].color } as CSSProperties} onClick={() => setSelected(item.id)} aria-label={`Observe ${PROFILES[item.id].name} at ${PLACES[item.location].name}`} aria-pressed={selected === item.id} title={item.activity}><span className="marker-core"><Glyph id={item.id} size={19}/></span><span className="marker-name">{PROFILES[item.id].name}<ChevronRight size={11}/></span><span className="marker-ground"/></button>;
-              })}
-              <div className="scene-caption"><Compass size={14}/><span>{visitorMode ? "Select a resident to follow their story" : "Residents move as their priorities change"}</span></div>
-            </div>
+            <div className="world-toolbar"><div className="world-status"><span className={loaded && playing ? "status-dot running" : "status-dot"} />{!loaded ? "Connecting to habitat" : playing ? "Life is unfolding" : "A moment of stillness"}</div>{visitorMode ? <span className="read-only-chip"><Lock size={12}/>Read only</span> : <div className="playback"><button disabled={!loaded || busy || catchingUp} onClick={() => invoke({ type: "playback", running: playing, speed: speed === 1 ? 2 : speed === 2 ? 4 : 1 })} className="speed-button" aria-label={`Simulation speed ${speed} times. Click to change.`}>{speed}×</button><span className="control-divider"/><button className="icon-button" disabled={!loaded || busy || catchingUp} onClick={() => invoke({ type: "playback", running: !playing, speed })} aria-label={playing ? "Pause simulation" : "Play simulation"}>{playing ? <Pause size={16} /> : <Play size={16} />}</button><button className="icon-button" disabled={!loaded || busy || catchingUp} onClick={() => invoke({ type: "step" })} aria-label="Advance one step"><SkipForward size={17}/></button></div>}</div>
+            <WorldMap world={world} selected={selected} onSelect={setSelected}/>
             <div className="world-metrics"><div><Leaf size={16}/><span>Growth</span><strong>{world.growth}<small>%</small></strong></div><div><Zap size={16}/><span>Power</span><strong>{world.power}<small>%</small></strong></div><div><Sparkles size={16}/><span>Discoveries</span><strong>{String(world.discoveries).padStart(2,"0")}</strong></div><div className="metrics-cycle">CYCLE <strong>{String(world.tick).padStart(3,"0")}</strong></div></div>
           </div>
 
           <ConstructionBoard world={world}/>
           <section className="residents-section" aria-labelledby="resident-heading"><div className="section-label"><h2 id="resident-heading">The residents <span>03</span></h2><span>Every one a little different</span></div><div className="resident-grid">{world.residents.map(item => <ResidentCard key={item.id} resident={item} selected={item.id === selected} onSelect={() => setSelected(item.id)}/>)}</div></section>
 
-          {visitorMode ? <section className="visitor-observe-card"><Lock size={19}/><div><strong>Owner controls are hidden here.</strong><p>The visitor link can follow movement, councils, construction, memories and new districts without sending simulation actions.</p></div></section> : <section className="interventions" aria-labelledby="event-heading"><div className="section-label"><h2 id="event-heading">A gentle nudge</h2><span>{remaining ? `${remaining} steps until this event settles` : "Change something. See what follows."}</span></div><div className="event-grid">{([{ id:"rain", icon:CloudRain, text:"Let something grow" },{ id:"relic", icon:Sparkles, text:"Give curiosity a reason" },{ id:"blackout", icon:ZapOff, text:"See who comes together" }] as const).map(event => <button key={event.id} className={`event-button ${world.intervention?.kind === event.id ? "event-active" : ""}`} onClick={() => invoke({ type:"event", event:event.id })} disabled={!loaded || busy || !!world.intervention}><event.icon size={21} strokeWidth={1.4}/><span><strong>{EVENT_LABELS[event.id]}</strong><small>{world.intervention?.kind === event.id ? "The habitat is responding…" : event.text}</small></span><ArrowUpRight size={14}/></button>)}</div></section>}
+          {visitorMode ? <section className="visitor-observe-card"><Lock size={19}/><div><strong>Owner controls are hidden here.</strong><p>The visitor link can follow movement, councils, construction, memories and new districts without sending simulation actions.</p></div></section> : <section className="interventions" aria-labelledby="event-heading"><div className="section-label"><h2 id="event-heading">A gentle nudge</h2><span>{remaining ? `${remaining} steps until this event settles` : "Change something. See what follows."}</span></div><div className="event-grid">{([{ id:"rain", icon:CloudRain, text:"Let something grow" },{ id:"relic", icon:Sparkles, text:"Give curiosity a reason" },{ id:"blackout", icon:ZapOff, text:"See who comes together" }] as const).map(event => <button key={event.id} className={`event-button ${world.intervention?.kind === event.id ? "event-active" : ""}`} onClick={() => invoke({ type:"event", event:event.id })} disabled={!loaded || busy || catchingUp || !!world.intervention}><event.icon size={21} strokeWidth={1.4}/><span><strong>{EVENT_LABELS[event.id]}</strong><small>{world.intervention?.kind === event.id ? "The habitat is responding…" : event.text}</small></span><ArrowUpRight size={14}/></button>)}</div></section>}
         </section>
 
         <aside className="focus-panel" style={{ "--resident": profile.color } as CSSProperties} aria-label={`${profile.name}'s profile`}>
@@ -217,9 +227,9 @@ export default function Habitat({ visitorMode = false }: { visitorMode?: boolean
         </aside>
       </TabsContent>
 
-      <TabsContent value="chronicle"><section className="chronicle-panel"><div className="chronicle-heading"><div><span className="eyebrow">THE THINGS THAT STAY</span><h2>A life, in small moments.</h2><p>The habitat's encounters, discoveries, decisions and turning points, newest first.</p></div><span className="chronicle-total"><BookOpen size={24}/><strong>{world.totalMemories}</strong>memories made</span></div><div className="chronicle-list">{world.chronicle.map(entry=><Entry entry={entry} key={entry.id}/>)}</div><p className="retention-note">The latest {world.chronicle.length} of up to 240 chronicle entries are kept.</p></section></TabsContent>
+      <TabsContent value="chronicle"><section className="chronicle-panel"><div className="chronicle-heading"><div><span className="eyebrow">THE THINGS THAT STAY</span><h2>A life, in small moments.</h2><p>The habitat&apos;s encounters, discoveries, decisions and turning points, newest first.</p></div><span className="chronicle-total"><BookOpen size={24}/><strong>{world.totalMemories}</strong>memories made</span></div><div className="chronicle-list">{world.chronicle.map(entry=><Entry entry={entry} key={entry.id}/>)}</div><p className="retention-note">The latest {world.chronicle.length} of up to 240 chronicle entries are kept.</p></section></TabsContent>
 
-      <footer className="footer"><span><Orbit size={15}/>A small world, still becoming.</span><div><span className="save-status" role="status">{loaded && !busy && !error ? <Check size={13}/> : <span className="status-dot"/>}{error ? "Connection needs attention" : status}</span>{!visitorMode && <AlertDialog onOpenChange={open=>{if(open)setPlaying(false);}}><AlertDialogTrigger asChild><button className="reset-button" disabled={!loaded || busy}><RotateCcw size={13}/>New beginning</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Begin a new habitat?</AlertDialogTitle><AlertDialogDescription>This clears all buildings, resources, districts, decisions, memories, relationships and the chronicle for this habitat. Moss, Lux and Echo will start again from their first morning. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep this world</AlertDialogCancel><AlertDialogAction onClick={()=>invoke({type:"reset"})}>Begin again</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div></footer>
+      <footer className="footer"><span><Orbit size={15}/>A small world, still becoming.</span><div><span className="save-status" role="status">{loaded && !busy && !error ? <Check size={13}/> : <span className="status-dot"/>}{error ? "Connection needs attention" : status}</span>{!visitorMode && <AlertDialog><AlertDialogTrigger asChild><button className="reset-button" disabled={!loaded || busy}><RotateCcw size={13}/>New beginning</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Begin a new habitat?</AlertDialogTitle><AlertDialogDescription>This clears all buildings, resources, districts, decisions, memories, relationships and the chronicle for this habitat. Moss, Lux and Echo will start again from their first morning. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep this world</AlertDialogCancel><AlertDialogAction onClick={()=>invoke({type:"reset"})}>Begin again</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div></footer>
     </main>
   </Tabs>;
 }

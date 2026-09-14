@@ -1,109 +1,48 @@
-import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
-import { advanceOffline, createWorld, evolveWorld, upgradeWorld } from "@/lib/habitat/engine";
-import type { LegacyWorld, LegacyWorldV2, World, WorldAction, WorldResponse } from "@/lib/habitat/types";
+import { habitatStore } from "@/db/storage-driver";
+import type { Snapshot } from "./storage-types";
+import { advanceOffline, createWorld, evolveWorld, pendingSteps, upgradeWorld } from "@/lib/habitat/engine";
+import type { WorldAction, WorldResponse } from "@/lib/habitat/types";
 
-type StoredWorld = World | LegacyWorld | LegacyWorldV2;
-type StoredHabitat = { world: StoredWorld; revision: number };
-type Snapshot = StoredHabitat & { etag: string };
+async function snapshot(now: number) { return await habitatStore.read() ?? await habitatStore.initialize(createWorld(4173, now)); }
 
-const HABITAT_PATH = "echo-habitat/world.json";
-
-function serialize(world: World, revision: number) {
-  return JSON.stringify({ world, revision });
+function response(saved: Snapshot, now: number): WorldResponse {
+  const world = upgradeWorld(saved.world, now);
+  return { world, revision: saved.revision, pendingSteps: pendingSteps(world, now) };
 }
 
-async function readExisting(): Promise<Snapshot | null> {
-  const result = await get(HABITAT_PATH, { access: "private", useCache: false });
-  if (!result || result.statusCode !== 200 || !result.stream) return null;
-  const parsed = JSON.parse(await new Response(result.stream).text()) as StoredHabitat;
-  if (!parsed || typeof parsed.revision !== "number" || !parsed.world) {
-    throw new Error("The habitat store contains invalid data.");
+async function synchronize(now: number, limit?: number) {
+  let current = await snapshot(now);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { world, summary } = advanceOffline(current.world, now, limit);
+    if (!summary && current.world.version === 4) return current;
+    const saved = await habitatStore.compareAndSwap(current, world);
+    if (saved) return saved;
+    current = await snapshot(now);
   }
-  return { ...parsed, etag: result.blob.etag };
+  // Return the winning committed snapshot; the next read will resume any backlog.
+  return current;
 }
 
-async function createInitial(now: number): Promise<Snapshot> {
-  const world = createWorld(4173, now);
-  try {
-    const blob = await put(HABITAT_PATH, serialize(world, 0), {
-      access: "private",
-      addRandomSuffix: false,
-      contentType: "application/json",
-    });
-    return { world, revision: 0, etag: blob.etag };
-  } catch {
-    // Another request may have initialized the habitat at the same time.
-    const existing = await readExisting();
-    if (existing) return existing;
-    throw new Error("The habitat store could not be initialized.");
-  }
+export async function readHabitat(now = Date.now(), limit?: number): Promise<WorldResponse> {
+  return response(await synchronize(now, limit), now);
 }
 
-async function readSnapshot(now: number): Promise<Snapshot> {
-  return (await readExisting()) ?? createInitial(now);
-}
-
-async function replaceSnapshot(snapshot: Snapshot, world: World, revision: number) {
-  return put(HABITAT_PATH, serialize(world, revision), {
-    access: "private",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    ifMatch: snapshot.etag,
-    contentType: "application/json",
-  });
-}
-
-async function synchronize(now: number): Promise<{ world: World; revision: number; etag: string; offline?: WorldResponse["offline"] }> {
-  let snapshot = await readSnapshot(now);
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const upgraded = upgradeWorld(snapshot.world, now);
-    const { world, summary } = advanceOffline(upgraded, now);
-    if (!summary) return { world, revision: snapshot.revision, etag: snapshot.etag };
-
-    try {
-      const revision = snapshot.revision + 1;
-      const blob = await replaceSnapshot(snapshot, world, revision);
-      return { world, revision, etag: blob.etag, offline: summary };
-    } catch (error) {
-      if (!(error instanceof BlobPreconditionFailedError)) throw error;
-      snapshot = await readSnapshot(now);
-    }
-  }
-
-  const latest = await readSnapshot(now);
-  return { world: upgradeWorld(latest.world, now), revision: latest.revision, etag: latest.etag };
-}
-
-export async function readHabitat(now = Date.now()): Promise<WorldResponse> {
-  const { world, revision, offline } = await synchronize(now);
-  return offline ? { world, revision, offline } : { world, revision };
-}
-
-export async function updateHabitat(action: WorldAction, revision: number, now = Date.now()) {
+export async function updateHabitat(action: WorldAction, actionRevision: number, now = Date.now()) {
   let current = await synchronize(now);
-  if (current.revision !== revision) {
-    return { conflict: true as const, world: current.world, revision: current.revision, offline: current.offline };
-  }
-
-  // A private Blob conditional write can lose a very small race between a fresh read
-  // and the following PUT. If the logical revision is still unchanged, refresh the
-  // ETag and retry the same action once instead of unnecessarily pausing the habitat.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const world = evolveWorld(current.world, action);
-    world.lastActiveAt = now;
-
-    try {
-      await replaceSnapshot(current, world, revision + 1);
-      return { conflict: false as const, world, revision: revision + 1 };
-    } catch (error) {
-      if (!(error instanceof BlobPreconditionFailedError)) throw error;
-      current = await synchronize(now);
-      if (current.revision !== revision) {
-        return { conflict: true as const, world: current.world, revision: current.revision, offline: current.offline };
-      }
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const previous = upgradeWorld(current.world, now);
+    if (previous.actionRevision !== actionRevision) return { conflict: true, ...response(current, now) };
+    if (pendingSteps(previous, now) > 0 && action.type !== "reset") {
+      throw new Error("The habitat is catching up. Wait a moment before changing its clock or introducing an event.");
     }
+    const world = evolveWorld(previous, action);
+    world.actionRevision = previous.actionRevision + 1;
+    if (action.type === "reset") world.epoch = now;
+    // Clock changes and manual steps begin a fresh interval. Idle time while paused is ignored.
+    world.lastActiveAt = now;
+    const saved = await habitatStore.compareAndSwap(current, world);
+    if (saved) return { conflict: false, ...response(saved, now) };
+    current = await synchronize(now);
   }
-
-  return { conflict: true as const, ...await readHabitat(now) };
+  return { conflict: true, ...response(current, now) };
 }

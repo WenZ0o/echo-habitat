@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { readExecutionProfile } from "./scripts/execution-profile.mjs";
 import { sites } from "./build/sites-vite-plugin";
+import { fileURLToPath } from "node:url";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
@@ -58,6 +59,17 @@ export default defineConfig(async () => {
     plugins: [
       vinext(),
       sites({ mockAuth: !managedLinux }),
+      {
+        name: "habitat-sites-adapters",
+        enforce: "post",
+        // Apply after Vinext's tsconfig aliases so its broad @/ entry cannot win.
+        config() {
+          return { resolve: { alias: [
+            { find: "@/db/storage-driver", replacement: fileURLToPath(new URL("./db/storage-driver.sites.ts", import.meta.url)) },
+            { find: "@/db/runtime", replacement: fileURLToPath(new URL("./db/runtime.sites.ts", import.meta.url)) },
+          ] } };
+        },
+      },
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         inspectorPort: false,

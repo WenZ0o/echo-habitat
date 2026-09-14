@@ -87,6 +87,7 @@ export function ConstructionBoard({ world }: { world: World }) {
         <div className="council-heading"><span className="council-icon"><Users size={18}/></span><div><span className="eyebrow"><Vote size={12}/> SHARED DECISION</span><strong>{BLUEPRINTS.find(item => item.id === decision.chosen)?.name}</strong></div><small>Cycle {decision.tick}</small></div>
         <p>{decision.summary}</p>
         <div className="council-votes">{RESIDENT_IDS.map(id => <span key={id} style={{ "--resident": PROFILES[id].color } as CSSProperties}><i/>{PROFILES[id].name}<b>→</b>{BLUEPRINTS.find(item => item.id === decision.votes[id])?.name}</span>)}</div>
+        {decision.reasons && <div className="council-reasons">{RESIDENT_IDS.map(id => <p key={id} style={{ "--resident": PROFILES[id].color } as CSSProperties}><strong>{PROFILES[id].name}&apos;s reason</strong>{decision.reasons?.[id]}</p>)}</div>}
       </div>}
 
       <div className="current-project" style={{ "--builder": PROFILES[blueprint.lead].color } as CSSProperties}>

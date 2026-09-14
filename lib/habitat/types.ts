@@ -20,6 +20,7 @@ export interface CouncilDecision {
   district: number;
   candidates: BlueprintId[];
   votes: Record<ResidentId, BlueprintId>;
+  reasons?: Record<ResidentId, string>;
   chosen: BlueprintId;
   summary: string;
 }
@@ -34,6 +35,8 @@ export interface Resident {
   id: ResidentId;
   location: Place;
   position: Position;
+  district: number;
+  carrying: Resource | null;
   energy: number;
   mood: number;
   progress: number;
@@ -51,10 +54,14 @@ export interface ChronicleEntry {
   kind: MemoryKind;
 }
 export interface World {
-  version: 3;
+  version: 4;
+  epoch: number;
   tick: number;
   seed: number;
   lastActiveAt: number;
+  clock: { running: boolean; speed: 1 | 2 | 4 };
+  actionRevision: number;
+  councilsMade: number;
   power: number;
   growth: number;
   discoveries: number;
@@ -65,15 +72,25 @@ export interface World {
   chronicle: ChronicleEntry[];
   settlement: Settlement;
 }
-export type LegacyWorld = Omit<World, "version" | "settlement" | "lastActiveAt" | "residents"> & {
+type LegacyBase = Omit<World, "version" | "settlement" | "lastActiveAt" | "residents" | "clock" | "actionRevision" | "councilsMade" | "epoch">;
+type LegacyResident = Omit<Resident, "position" | "district" | "carrying">;
+export type LegacyWorld = LegacyBase & {
   version: 1;
-  residents: Array<Omit<Resident, "position">>;
+  residents: LegacyResident[];
 };
-export type LegacyWorldV2 = Omit<World, "version" | "lastActiveAt" | "residents" | "settlement"> & {
+export type LegacyWorldV2 = LegacyBase & {
   version: 2;
-  residents: Array<Omit<Resident, "position">>;
+  lastActiveAt?: number;
+  residents: LegacyResident[];
   settlement: Omit<Settlement, "decision">;
 };
+export type LegacyWorldV3 = LegacyBase & {
+  version: 3;
+  lastActiveAt: number;
+  residents: Array<LegacyResident & { position: Position }>;
+  settlement: Settlement;
+};
+export type StoredWorld = World | LegacyWorld | LegacyWorldV2 | LegacyWorldV3;
 export interface OfflineSummary {
   elapsedMs: number;
   steps: number;
@@ -88,5 +105,7 @@ export interface WorldResponse {
   revision: number;
   offline?: OfflineSummary;
   mode?: "owner" | "visitor";
+  access?: { canSignIn: boolean; signInUrl?: string };
+  pendingSteps?: number;
 }
-export type WorldAction = { type: "step" } | { type: "event"; event: Intervention } | { type: "reset" };
+export type WorldAction = { type: "step" } | { type: "event"; event: Intervention } | { type: "reset" } | { type: "playback"; running: boolean; speed: 1 | 2 | 4 };

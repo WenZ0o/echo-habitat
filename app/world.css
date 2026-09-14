@@ -1,0 +1,51 @@
+/* The original habitat palette, extended to an inspectable archipelago. */
+.map-navigation{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 18px;background:#101910;border-bottom:1px solid #2b3828}
+.map-navigation strong{display:block;font-size:14px;font-weight:500;color:#c8d8bd;margin-top:2px}
+.map-navigation .eyebrow{font-size:10px;letter-spacing:1.5px}
+.map-pagination{display:flex;align-items:center;gap:5px;color:#9fad95;font-size:12px}
+.map-pagination button{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #3a4a32;border-radius:5px;background:#1b2718;color:#c5d8b4;min-height:34px;min-width:34px;padding:6px}
+.map-pagination button:disabled{opacity:.35;cursor:default}
+.map-pagination button[aria-pressed=true]{border-color:#829865;background:#26371f}
+.map-pagination label{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.map-pagination input{background:#0e160e;color:#dceaca;border:1px solid #3b4a32;border-radius:4px;width:58px;padding:7px 4px;font-family:var(--font-mono)}
+.map-pagination .follow-work{margin-left:6px;padding:6px 9px;font-size:12px}
+.archipelago-scene{aspect-ratio:1.45;background:radial-gradient(ellipse at 48% 43%,#293420 0,#101a12 54%,#0b120d 100%);overflow:hidden}
+.home-island,.growing-island{position:absolute;aspect-ratio:1.5;pointer-events:none}
+.home-island .habitat-art{height:auto;width:100%;mix-blend-mode:lighten;mask-image:radial-gradient(ellipse at center,#000 45%,#000a 60%,transparent 75%)}
+.island-terrain{width:100%;height:auto;display:block;user-select:none;filter:drop-shadow(0 16px 20px #0005)}
+.island-name{position:absolute;top:76%;left:44%;transform:translateX(-50%);color:#b9caa8;font:11px var(--font-mono);background:#0f1a10e6;border:1px solid #47583a99;border-radius:5px;padding:5px 9px;white-space:nowrap;z-index:2}
+.district-name{top:85%;left:50%;font-size:12px}
+.map-structure{position:absolute;width:22%;aspect-ratio:1;border:none;background:none;transform:translate(-50%,-85%);padding:0;pointer-events:auto;isolation:isolate;cursor:pointer}
+.structure-sprite{position:absolute;inset:0;display:block;background-image:url('/world-structures.png');background-size:300% 200%;background-position:var(--sprite-x) var(--sprite-y);background-repeat:no-repeat;filter:drop-shadow(0 3px 4px #0006);transition:opacity 1s,clip-path 1s,filter .3s}
+.building-footprint{position:absolute;bottom:2%;left:15%;width:70%;height:30%;border:1px solid #a8bb5c66;border-radius:50%;background:#b1bf5122;transform:rotate(-7deg);opacity:0;transition:opacity .2s}
+.map-structure:hover .building-footprint,.map-structure.selected .building-footprint{opacity:1;box-shadow:0 0 14px #dcdd6644}
+.map-structure.clearing .building-footprint{opacity:.3;border-style:dashed;background:none}
+.map-structure.foundation .building-footprint,.map-structure.frame .building-footprint,.map-structure.finishing .building-footprint{opacity:1;border-style:dashed;border-color:#d9bf6a;background:repeating-linear-gradient(130deg,#b89e481c 0 4px,transparent 4px 9px)}
+.map-structure.foundation .structure-sprite{clip-path:inset(80% 0 0);opacity:.4;filter:sepia(.8)}
+.map-structure.frame .structure-sprite{clip-path:inset(35% 0 0);opacity:.65;filter:sepia(.5)}
+.map-structure.finishing .structure-sprite{opacity:.88}
+.construction-label{position:absolute;left:50%;top:90%;transform:translateX(-50%);display:flex;align-items:center;gap:3px;background:#222516ed;color:#ecda9b;border:1px solid #928348;font:10px var(--font-mono);border-radius:4px;padding:3px 5px;white-space:nowrap}
+.map-resident{position:absolute;transform:translate(-50%,-91%);width:50px;height:98px;padding:0;background:none;border:none;color:var(--resident);z-index:5;transition:left 2.6s ease-in-out,top 2.6s ease-in-out;cursor:pointer;isolation:isolate}
+.map-resident.selected{z-index:7}
+.robot-sprite{display:block;position:absolute;inset:0;background-image:url('/world-residents.png');background-size:300% 100%;background-position:var(--robot-x) 0;background-repeat:no-repeat;filter:drop-shadow(0 3px 2px #0008)}
+.map-resident.selected .robot-sprite{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--resident) 60%,transparent)) drop-shadow(0 3px 2px #0008)}
+.clock-running .carrying .robot-sprite{animation:carrying-walk .65s ease-in-out infinite alternate;transform-origin:50% 90%}
+.robot-label{position:absolute;left:50%;top:90%;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:4px 7px;background:#121f12ed;border:1px solid color-mix(in srgb,var(--resident) 45%,transparent);border-radius:4px;font:11px var(--font-mono);white-space:nowrap}
+.map-resident.selected .robot-label{background:#31432af5;border-color:var(--resident)}
+.archipelago-scene .scene-caption{bottom:13px;right:14px;left:14px;padding:7px 10px;background:#0c160dd9;border:1px solid #2f4027;border-radius:5px;font-size:12px;line-height:1.4;color:#b6c8a5;white-space:normal;max-width:calc(100% - 28px)}
+.archipelago-scene .weather-badge{font-size:11px;right:14px;top:13px}
+.low-power .island-terrain,.low-power .structure-sprite{filter:brightness(.55) saturate(.7)}
+.map-activity{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #2b3726;background:#111b12}
+.map-activity button{border:0;border-right:1px solid #2b3726;padding:11px 13px;background:transparent;color:#a8b899;display:grid;grid-template-columns:6px 1fr;column-gap:7px;row-gap:3px;text-align:left;min-height:56px}
+.map-activity button:last-child{border-right:0}.map-activity button:hover{background:#1c2a19}
+.map-activity i{width:5px;height:5px;border-radius:50%;background:var(--resident);margin-top:6px}
+.map-activity strong{font-size:12px;font-weight:500;color:var(--resident)}
+.map-activity span{grid-column:2;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.owner-form{display:flex;flex-direction:column;gap:12px;padding-top:10px;color:#cddcbd}.owner-form label{font-size:14px}.owner-form p{font-size:14px;color:#e3ab99}
+.return-highlights{border:1px solid #34472d;border-radius:8px;padding:12px 18px;margin:-12px 0 20px;background:#141f14}.return-highlights summary{cursor:pointer;color:#bdd1a9;font-size:14px}.return-highlights .log-entry{margin-top:8px}
+.share-fallback{display:flex;flex-direction:column;gap:6px;flex:1;font-size:13px}.share-fallback input{width:100%;background:#0c160c;border:1px solid #435939;border-radius:4px;padding:8px;color:#d2e3bd;font-size:14px}
+.council-reasons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.council-reasons p{margin:0;color:#a6b89a;font-size:13px;line-height:1.6}.council-reasons strong{display:block;color:var(--resident);font-weight:500;font-size:12px;margin-bottom:3px}
+.offline-banner small{font-size:13px}.visitor-banner{font-size:14px;line-height:1.6}
+@keyframes carrying-walk{from{transform:rotate(-2deg) translateY(0)}to{transform:rotate(2deg) translateY(-2px)}}
+@media(max-width:760px){.map-navigation{align-items:flex-start;flex-direction:column;gap:10px;padding:12px}.map-pagination{width:100%;justify-content:flex-start}.map-pagination .follow-work{margin-left:auto}.map-resident{width:39px;height:78px}.robot-label{font-size:10px;padding:3px 5px}.island-name{font-size:9px;padding:4px 6px}.district-name{font-size:10px}.map-activity button{padding:9px 8px}.map-activity span{font-size:10px}.archipelago-scene .scene-caption{font-size:11px;bottom:8px;padding:5px 7px}.construction-label{font-size:9px;padding:2px 4px}.construction-label svg{display:none}.council-reasons{grid-template-columns:1fr;gap:8px}.header-right{gap:7px}.header-right .visitor-link-button{font-size:11px;width:auto;min-height:34px;padding:6px}.header-right .simulation-label{display:none}}
+@media(prefers-reduced-motion:reduce){.map-resident{transition:none}.clock-running .carrying .robot-sprite{animation:none}.structure-sprite{transition:none}}
