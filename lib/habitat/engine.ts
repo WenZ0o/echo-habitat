@@ -160,6 +160,32 @@ function scoreCandidate(world: World, resident: Resident, id: BlueprintId) {
 function holdCouncil(world: World, candidates: BlueprintId[]): CouncilDecision {
   const votes = {} as Record<ResidentId, BlueprintId>;
   const reasons = {} as Record<ResidentId, string>;
+  const perspectives: Record<ResidentId, Record<BlueprintId, string>> = {
+    moss: {
+      garden: `Growth is at ${world.growth}%. I want a sheltered place for the next seedlings.`,
+      solar: "Reliable power means I can spend more time caring for the grove.",
+      lookout: "From up there I could find sheltered places for the next garden.",
+      cistern: "I want to save some rain for the roots when the clear days come.",
+      workshop: "A shared place for tools would help me mend what I use in the grove.",
+      bridge: "I want to carry a few seeds across and give the next island a gentle beginning.",
+    },
+    lux: {
+      garden: "A garden would make growth steadier while I keep the station running.",
+      solar: `Power is at ${world.power}%. I want panels that keep us going between repairs.`,
+      lookout: "I want a clearer view of the ground before we plan the next structure.",
+      cistern: "A collector would make each shower useful. I can help fit the channels together.",
+      workshop: `We have ${world.settlement.resources.salvage} salvage. I want a proper bench to turn those parts into useful things.`,
+      bridge: "This district is ready. I want to make a crossing we can rely on.",
+    },
+    echo: {
+      garden: "I want to watch which plants return as this district takes root.",
+      solar: "Steadier power would give me more time to study what we find, without another interruption.",
+      lookout: `We have made ${world.discoveries} discoveries. I want to see what lies past the edge we know.`,
+      cistern: "I want to see where the rain travels and what starts growing along its path.",
+      workshop: "Some of the pieces we find carry marks. I would like a place to examine them.",
+      bridge: "I keep wondering what lies across that gap. I want to find out together.",
+    },
+  };
   for (const resident of world.residents) {
     let best = candidates[0];
     let bestScore = -Infinity;
@@ -171,12 +197,7 @@ function holdCouncil(world: World, candidates: BlueprintId[]): CouncilDecision {
       }
     }
     votes[resident.id] = best;
-    reasons[resident.id] = best === "garden" ? `Growth is at ${world.growth}%. More roots will keep it steady.`
-      : best === "solar" ? `Power is at ${world.power}%. A little independence from repairs would help.`
-      : best === "cistern" ? `We have ${world.settlement.resources.biomass} biomass. Let us make gathering easier.`
-      : best === "workshop" ? `We have ${world.settlement.resources.salvage} salvage. A shared workbench will make more of it.`
-      : best === "lookout" ? "A higher view will help us understand the ground ahead."
-      : "This district is ready. It is time to reach the next island.";
+    reasons[resident.id] = perspectives[resident.id][best];
   }
   const counts = new Map<BlueprintId, number>();
   for (const vote of Object.values(votes)) counts.set(vote, (counts.get(vote) ?? 0) + 1);
