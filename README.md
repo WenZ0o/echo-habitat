@@ -1,7 +1,7 @@
 # ECHO HABITAT
 ### Three lives. One shared world. A story that keeps growing.
 
-![Echo Habitat — world artwork](public/habitat.png)
+![ECHO HABITAT — application preview](public/preview.png)
 
 ECHO HABITAT is a small life simulation about three digital residents
 building a home together.
