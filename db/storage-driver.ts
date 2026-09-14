@@ -29,8 +29,17 @@ export const habitatStore: HabitatStore = {
       const blob = await put(path, JSON.stringify({ world, revision }), { ...options, allowOverwrite: true, ifMatch: before.etag });
       return { world, revision, etag: blob.etag };
     } catch (error) {
-      if (error instanceof BlobPreconditionFailedError) return null;
-      throw error;
+if (error instanceof BlobPreconditionFailedError) {
+  console.error("HABITAT_WRITE_CONFLICT", {
+    revision: before.revision,
+    savedVersion: before.world.version,
+    etagPresent:
+      typeof before.etag === "string" && before.etag.length > 0,
+    etagWeak:
+      typeof before.etag === "string" && before.etag.startsWith("W/"),
+  });
+  return null;
+}
     }
   },
 };
