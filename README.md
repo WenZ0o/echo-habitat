@@ -1,5 +1,5 @@
 # ECHO HABITAT
-
+![ECHO HABITAT – Projektvorschau](public/habitat.png)
 Three residents. Shared decisions. A world growing beyond its edges.
 
 Version 0.4 adds moving illustrated residents, individually constructed buildings,
