@@ -391,25 +391,74 @@ function decide(world: World, resident: Resident) {
 
   if (buildOrGather(world, resident)) return;
 
-  const other = world.residents.find(item => item.id !== resident.id && item.location === resident.location);
+  const other = world.residents.find(item =>
+    item.id !== resident.id &&
+    item.location === resident.location &&
+    item.district === 0 &&
+    resident.district === 0
+  );
+
   if (other && roll < 0.5) {
     const trusted = resident.bonds[other.id] >= 70;
+    const name = PROFILES[resident.id].name;
+    const otherName = PROFILES[other.id].name;
+    const project = world.settlement.project;
+    const blueprint = project
+      ? BLUEPRINTS.find(item => item.id === project.blueprint)
+      : undefined;
+
+    let lines: [string, string];
+
+    if (other.activity === "Taking a quiet moment") {
+      lines = [
+        "Mind if I sit here with you?",
+        "Please do. We can leave the next task for a little while.",
+      ];
+    } else if (world.power < 45) {
+      lines = [
+        "The lights are getting faint again.",
+        "Let us check on Lux. There may be something we can help with.",
+      ];
+    } else if (blueprint) {
+      lines = [
+        `How do you think the ${blueprint.name.toLowerCase()} will look when it is finished?`,
+        "A little uneven, probably. But we will know who made every part.",
+      ];
+    } else if (resident.location === "grove") {
+      lines = [
+        "Was that little shoot here yesterday?",
+        "I do not think so. We should leave some room around it.",
+      ];
+    } else if (resident.location === "observatory") {
+      lines = [
+        "Can you hear that quiet hum?",
+        "Yes. I only notice how much I like it when it stops.",
+      ];
+    } else if (trusted) {
+      lines = [
+        "I knew I would find you here.",
+        "I saved you the spot with the better reflection.",
+      ];
+    } else {
+      lines = [
+        "What do you notice first when you wake up?",
+        "Whether I can hear the others moving about. What about you?",
+      ];
+    }
+
     bond(resident, other, 4);
     resident.mood = clamp(resident.mood + 5);
     moveResident(resident, resident.location, world.tick, other.position, 0.7);
-    resident.activity = `Spending time with ${PROFILES[other.id].name}`;
-    const sharedMemory = other.memories.find(memory => memory.kind === "discovery");
-    resident.thought = sharedMemory
-      ? `${PROFILES[other.id].name} told me: “${sharedMemory.text}”`
-      : trusted
-        ? `I know the sound of ${PROFILES[other.id].name}'s footsteps now. It feels like home.`
-        : `I asked ${PROFILES[other.id].name} what they notice first when they wake up.`;
-    remember(world, resident, resident.thought, "encounter");
-    remember(world, other, `${profile.name} stayed to listen to me at ${PLACES[resident.location].name.toLowerCase()}.`, "encounter");
+    resident.activity = `Talking with ${otherName}`;
+    resident.thought = `I asked, “${lines[0]}” ${otherName} replied, “${lines[1]}”`;
+
+    const conversation = `${name}: “${lines[0]}” — ${otherName}: “${lines[1]}”`;
+    remember(world, resident, conversation, "encounter");
+    remember(world, other, conversation, "encounter");
     record(world, {
       actor: resident.id,
-      title: trusted ? "A familiar kind of quiet" : "A little less like strangers",
-      text: `${profile.name} and ${PROFILES[other.id].name} share a moment at ${PLACES[resident.location].name.toLowerCase()}.`,
+      title: `${name} and ${otherName}, a small conversation`,
+      text: conversation,
       kind: "encounter",
     });
     return;
