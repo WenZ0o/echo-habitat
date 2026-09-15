@@ -40,7 +40,7 @@ export function OwnerAccess({ data, refresh, visitorMode = false }: { data: Worl
         <p>Owner sign-in is not configured for this deployment.</p>
         <ol>
           <li>Open the Vercel project serving this address, then Settings → Environment Variables.</li>
-          <li>Set <code>HABITAT_OWNER_KEY</code> to a unique, random secret of 32–512 characters, generated in your password manager. Enable it for Production.</li>
+          <li>Configure the private owner-key environment variable described in the repository README. Use a unique, random secret of 32–512 characters, generated in your password manager, and enable it for Production.</li>
           <li>Redeploy, open this site again, and choose Owner sign-in.</li>
         </ol>
         <p>Keep this key out of GitHub, chat messages and visitor links. Never use your Blob token or API key for this.</p>
