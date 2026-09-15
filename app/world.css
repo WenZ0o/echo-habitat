@@ -76,3 +76,9 @@
 .owner-setup,.owner-access-note{font-size:14px;line-height:1.65;color:#b7c7aa}.owner-setup ol{padding-left:22px;list-style:decimal}.owner-setup li{margin:10px 0}.owner-setup code{overflow-wrap:anywhere;color:#d7e8c6}
 .map-pagination{flex-wrap:wrap}.map-pagination .overview-toggle{padding:8px;font-size:12px}.map-pagination button{min-height:44px;min-width:44px}.map-pagination .follow-work{margin-left:0}
 @media(max-width:760px){.archipelago-overview{padding:12px}.overview-islands{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.overview-home img{width:80px}.overview-pagination{font-size:11px}.district-context{padding:12px}.district-building-list{grid-template-columns:repeat(2,minmax(0,1fr))}.map-pagination{gap:6px}.map-pagination .follow-work{margin-left:0}.header-right{flex-wrap:wrap}.owner-setup{font-size:13px}}
+
+/* The live scene remains mounted while visitors browse the island catalogue. */
+.overview-island{background:radial-gradient(ellipse at 50% 25%,var(--island-tint,#263a25),#121d14 80%)}
+.district-buildings{background:#142016;border-top:1px solid #34472c}
+.district-buildings>summary{cursor:pointer;padding:13px 18px;color:#bbcca9;font-size:13px;min-height:44px}
+.archipelago-overview{border-top:1px solid #3b5033}
