@@ -82,3 +82,34 @@
 .district-buildings{background:#142016;border-top:1px solid #34472c}
 .district-buildings>summary{cursor:pointer;padding:13px 18px;color:#bbcca9;font-size:13px;min-height:44px}
 .archipelago-overview{border-top:1px solid #3b5033}
+
+/* A continuous atlas. Camera transforms do not affect the saved simulation. */
+.world-atlas{border-block:1px solid #41503a;background:#101c19;color:#cedcc2}
+.atlas-heading{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.atlas-heading h3{font:24px Georgia,serif;margin:5px 0;color:#e0e9ce}
+.atlas-heading p{font-size:12px;color:#9eafa0;margin:5px 0}
+.atlas-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.atlas-tools button,.atlas-footer button{min-height:44px;min-width:44px;padding:8px 12px;border:1px solid #455b4a;background:#20342b;color:#d9e6c9;border-radius:6px;font-size:12px}
+.atlas-tools button[aria-pressed=true]{background:#425d3e;border-color:#a5bb7e}
+.atlas-tools>span{font:11px var(--font-mono);min-width:36px;text-align:center}
+.atlas-viewport{position:relative;height:560px;overflow:hidden;isolation:isolate;touch-action:none;cursor:grab;user-select:none;background:radial-gradient(ellipse at 45% 35%,#24463f,#112724 60%,#0a1919);outline-offset:-3px}
+.atlas-viewport:focus-visible{outline:2px solid #bad995}
+.atlas-viewport.is-dragging,.atlas-viewport.is-dragging *{cursor:grabbing!important}
+.atlas-space{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform}
+.atlas-connections{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.atlas-island{position:absolute;width:300px;height:200px;border:0;padding:0;background:none;color:#dce8cf;text-align:center;cursor:pointer;overflow:visible}
+.atlas-island>img{width:300px;height:200px;object-fit:contain;pointer-events:none}
+.drawn-terrain{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 12px 13px #0005)}
+.atlas-island.is-selected>.drawn-terrain{filter:drop-shadow(0 0 8px #bddc8c80) drop-shadow(0 12px 13px #0005)}
+.atlas-island:focus-visible{outline:2px solid #bddc8c;border-radius:30%}
+.atlas-island-label{position:absolute;top:100%;left:10%;width:80%;font:14px var(--font-mono);padding:7px 5px;background:#10221cdb;border:1px solid #57705280;border-radius:5px;pointer-events:none}
+.atlas-island-label small{display:block;font-size:10px;color:#a7b89a;margin-top:3px}
+.atlas-building{position:absolute;width:66px;height:66px;transform:translate(-50%,-85%);pointer-events:none}
+.atlas-resident{position:absolute;width:29px;height:57px;transform:translate(-50%,-90%);padding:0;background:none;border:0;z-index:5;transition:left 2.6s ease-in-out,top 2.6s ease-in-out;cursor:pointer}
+.atlas-resident .robot-label{font-size:9px;padding:2px 4px}
+.atlas-resident.is-selected .robot-sprite{filter:drop-shadow(0 0 5px var(--resident))}
+.atlas-compass{position:absolute;right:16px;top:14px;font:14px var(--font-mono);color:#aabca9;pointer-events:none}
+.atlas-footer{padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-top:1px solid #354d40;font-size:13px}
+.atlas-scroll-note{margin-left:auto;font-size:11px;color:#8ea692}
+@media(max-width:760px){.atlas-heading{padding:14px;gap:8px}.atlas-heading h3{font-size:22px}.atlas-viewport{height:460px}.atlas-tools{gap:4px}.atlas-tools button{padding:7px 9px}.atlas-footer{padding:10px 14px}.atlas-scroll-note{width:100%;margin:0}}
+@media(prefers-reduced-motion:reduce){.atlas-resident{transition:none}}
