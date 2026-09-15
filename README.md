@@ -100,10 +100,6 @@ Configure these environment variables locally or in Vercel:
 | HABITAT_OWNER_KEY | Private key for owner sign-in |
 | CRON_SECRET | Protects the scheduled background endpoint |
 
-Use different random values of at least 32 characters for
-HABITAT_OWNER_KEY and CRON_SECRET.
-
-Never commit real keys or .env files to GitHub.
 
 ## Project status
 
