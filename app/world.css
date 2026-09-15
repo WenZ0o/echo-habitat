@@ -49,3 +49,30 @@
 @keyframes carrying-walk{from{transform:rotate(-2deg) translateY(0)}to{transform:rotate(2deg) translateY(-2px)}}
 @media(max-width:760px){.map-navigation{align-items:flex-start;flex-direction:column;gap:10px;padding:12px}.map-pagination{width:100%;justify-content:flex-start}.map-pagination .follow-work{margin-left:auto}.map-resident{width:39px;height:78px}.robot-label{font-size:10px;padding:3px 5px}.island-name{font-size:9px;padding:4px 6px}.district-name{font-size:10px}.map-activity button{padding:9px 8px}.map-activity span{font-size:10px}.archipelago-scene .scene-caption{font-size:11px;bottom:8px;padding:5px 7px}.construction-label{font-size:9px;padding:2px 4px}.construction-label svg{display:none}.council-reasons{grid-template-columns:1fr;gap:8px}.header-right{gap:7px}.header-right .visitor-link-button{font-size:11px;width:auto;min-height:34px;padding:6px}.header-right .simulation-label{display:none}}
 @media(prefers-reduced-motion:reduce){.map-resident{transition:none}.clock-running .carrying .robot-sprite{animation:none}.structure-sprite{transition:none}}
+
+/* Browse the whole settlement without replacing old islands with new ones. */
+.archipelago-overview{padding:18px;background:radial-gradient(ellipse at center,#22301e,#0d160f);color:#c8d8bd}
+.archipelago-summary strong{font-size:16px;font-weight:500}.archipelago-summary p{font-size:13px;line-height:1.6;color:#a0b194;margin:7px 0 12px}
+.overview-home{display:flex;align-items:center;gap:12px;border-bottom:1px solid #35462d;padding-bottom:12px}
+.overview-home img{width:100px;height:auto}.overview-home span{font-size:14px}.overview-home small{display:block;font-size:12px;color:#97ab88;margin-top:4px}
+.overview-islands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 0}
+.overview-island{display:flex;flex-direction:column;align-items:center;min-width:0;border:1px solid #374a2f;border-radius:12px;padding:8px 8px 12px;background:#152015;color:#d9e6cf;text-align:center}
+.overview-island:hover,.overview-island:focus-visible{background:#25341f;border-color:#9db981}
+.overview-terrain{position:relative;display:block;width:100%;aspect-ratio:1.5}
+.overview-terrain>img{width:100%;height:auto;display:block}
+.overview-building{position:absolute;width:24%;aspect-ratio:1;transform:translate(-50%,-85%);pointer-events:none}
+.overview-building.in-progress{opacity:.5}
+.overview-island strong{font-size:14px;font-weight:500;margin:4px 0}.overview-island>span:not(.overview-terrain){font-size:12px;color:#b1c4a2}.overview-island small{font-size:11px;line-height:1.5;color:#91a880;margin-top:5px}
+.overview-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.overview-pagination button,.overview-latest{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:8px;border:1px solid #405637;border-radius:6px;background:#1a2918;color:#c9dcb8}
+.overview-pagination button:disabled{opacity:.4;cursor:default}
+.overview-pagination span{text-align:center}
+.overview-latest{display:flex;margin:12px auto 0}
+.district-context{display:flex;flex-direction:column;gap:5px;padding:13px 18px;background:#1a2518;border-bottom:1px solid #34472c;line-height:1.5}
+.district-context strong{font-size:14px;font-weight:500;color:#d9e5d0}.district-context span{font-size:12px;color:#a2b994}
+.district-building-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#33472a;border-top:1px solid #33472a}
+.district-building-list button{display:flex;flex-direction:column;text-align:left;gap:5px;padding:12px;background:#131e14;border:0;color:#bbcca9}
+.district-building-list button[aria-pressed=true]{background:#2b3a23}.district-building-list strong{font-size:13px;font-weight:500}.district-building-list span{font-size:12px;color:#8da67c}
+.owner-setup,.owner-access-note{font-size:14px;line-height:1.65;color:#b7c7aa}.owner-setup ol{padding-left:22px;list-style:decimal}.owner-setup li{margin:10px 0}.owner-setup code{overflow-wrap:anywhere;color:#d7e8c6}
+.map-pagination{flex-wrap:wrap}.map-pagination .overview-toggle{padding:8px;font-size:12px}.map-pagination button{min-height:44px;min-width:44px}.map-pagination .follow-work{margin-left:0}
+@media(max-width:760px){.archipelago-overview{padding:12px}.overview-islands{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.overview-home img{width:80px}.overview-pagination{font-size:11px}.district-context{padding:12px}.district-building-list{grid-template-columns:repeat(2,minmax(0,1fr))}.map-pagination{gap:6px}.map-pagination .follow-work{margin-left:0}.header-right{flex-wrap:wrap}.owner-setup{font-size:13px}}
