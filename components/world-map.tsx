@@ -4,15 +4,15 @@ import { useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, CloudRain, Focus, Hammer, Sprout, Sun, Wrench, Sparkles } from "lucide-react";
 import { BLUEPRINTS, districtOf, RESOURCES, workRequired } from "@/lib/habitat/construction";
 import { PLACES, PROFILES, RESIDENT_IDS } from "@/lib/habitat/residents";
-import { biome, buildingPosition, residentPosition, IslandTerrain } from "./island-terrain";
-import { DistrictStructureArt, districtArchitecture, districtStructure } from "./district-architecture";
-import { DistrictLifeLayer, LivingWorldAtmosphere } from "./living-world-atmosphere";
+import { biome, buildingPosition, residentPosition } from "./island-terrain";
+import { districtArchitecture, districtStructure } from "./district-architecture";
+import { DistrictRasterIsland, DistrictRasterStructure, districtCityPlan } from "./district-raster";
 import { WorldAtlas } from "./world-atlas";
 import type { BlueprintId, ResidentId, World } from "@/lib/habitat/types";
 
 const RESOURCE_ICON = { biomass: Sprout, salvage: Wrench, insight: Sparkles };
-const HOME = { left: -9, top: 8, width: 72 };
-const DISTRICT = { left: 29, top: 25, width: 82 };
+const HOME = { left: -12, top: 2, width: 82 };
+const DISTRICT = { left: 37, top: 34, width: 72 };
 
 export function WorldMap({ world, selected, onSelect }: { world: World; selected: ResidentId; onSelect: (id: ResidentId) => void }) {
   const latest = districtOf(world);
@@ -25,6 +25,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
   const viewed = detail ? BLUEPRINTS.find(item => item.id === detail) : null;
   const viewedIdentity = detail ? districtStructure(detail, district) : null;
   const architecture = districtArchitecture(district);
+  const cityPlan = districtCityPlan(district);
   const totalBuilt = Object.values(world.settlement.built).reduce((sum, count) => sum + count, 0);
   const districtBuilt = BLUEPRINTS.filter(item => world.settlement.built[item.id] >= district).length;
 
@@ -60,25 +61,19 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
       </div>
       <div className="district-architecture-copy">
         <b>{architecture.title}</b>
-        <span>{architecture.style}</span>
+        <span>{cityPlan.label} · {architecture.style}</span>
         <p>{architecture.description}</p>
       </div>
     </div>
 
-    <div className={`world-scene archipelago-scene premium-district-scene living-world-scene biome-${(district - 1) % 10} ${world.weather === "rain" ? "raining" : ""} ${world.power < 35 ? "low-power" : ""} ${world.clock.running ? "clock-running" : ""}`}>
-      <LivingWorldAtmosphere district={district} latest={latest} running={world.clock.running} weather={world.weather} power={world.power}/>
-
-      <div className="world-origin-link" aria-hidden="true"><i/><span>ORIGIN NETWORK</span><b/></div>
-
-      <div className="home-island origin-reference" style={{ left: `${HOME.left}%`, top: `${HOME.top}%`, width: `${HOME.width}%` }}>
+    <div className={`world-scene archipelago-scene photoreal-district-scene ${world.weather === "rain" ? "raining" : ""} ${world.power < 35 ? "low-power" : ""} ${world.clock.running ? "clock-running" : ""}`}>
+      <div className="home-island" style={{ left: `${HOME.left}%`, top: `${HOME.top}%`, width: `${HOME.width}%` }}>
         <img className="habitat-art" src="/habitat.png" width={1536} height={1024} alt="Their first home: a grove, reflection pool and glowing observatory beneath a glass dome." fetchPriority="high"/>
-        <span className="island-name">Origin · The first home</span>
+        <span className="island-name">The first home</span>
       </div>
 
-      <div className="growing-island premium-growing-island living-district" style={{ left: `${DISTRICT.left}%`, top: `${DISTRICT.top}%`, width: `${DISTRICT.width}%`, "--world-glass": biome(district).glass } as CSSProperties}>
-        <span className="district-atmosphere" aria-hidden="true"/>
-        <IslandTerrain district={district}/>
-        <DistrictLifeLayer district={district} running={world.clock.running} completed={districtBuilt} power={world.power}/>
+      <div className="growing-island raster-growing-island" style={{ left: `${DISTRICT.left}%`, top: `${DISTRICT.top}%`, width: `${DISTRICT.width}%` }}>
+        <DistrictRasterIsland district={district} completed={districtBuilt} power={world.power}/>
         {BLUEPRINTS.map(blueprint => {
           const complete = world.settlement.built[blueprint.id] >= district;
           const active = project?.blueprint === blueprint.id;
@@ -90,7 +85,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
             onClick={() => setDetail(value => value === blueprint.id ? null : blueprint.id)} aria-pressed={detail === blueprint.id}
             aria-label={`${identity.name}, district ${district}: ${complete ? "complete" : active ? `${phase}, ${progress}% built` : "future site"}`}>
             <span className="building-footprint"/>
-            {(complete || active) && <DistrictStructureArt id={blueprint.id} district={district} progress={progress} className="map-custom-structure-art"/>}
+            {(complete || active) && <DistrictRasterStructure id={blueprint.id} district={district} progress={progress}/>} 
             {active && <span className="construction-label"><Hammer size={10}/>{progress}%</span>}
           </button>;
         })}
@@ -110,7 +105,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
       })}
 
       <div className="weather-badge">{world.weather === "rain" ? <CloudRain size={15}/> : <Sun size={15}/>}<span>{world.weather === "rain" ? "Gentle rain" : "Clear skies"}</span></div>
-      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>A living machine settlement connected to Origin — lights, infrastructure and habitat activity continue beyond the visible residents.</span></>}</div>
+      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>{cityPlan.label}. The city grows on the same physical world art as Origin instead of a separate sketch layer.</span></>}</div>
     </div>
 
     <details className="district-buildings district-buildings-premium">
@@ -118,8 +113,9 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
       <div className="district-building-list" aria-label={`Structures in district ${district}`}>
         {BLUEPRINTS.map(blueprint => {
           const identity = districtStructure(blueprint.id, district);
+          const progress = world.settlement.built[blueprint.id] >= district ? 100 : project?.blueprint === blueprint.id ? Math.floor(100 * project.work / workRequired(blueprint, district)) : 0;
           return <button key={blueprint.id} onClick={() => setDetail(value => value === blueprint.id ? null : blueprint.id)} aria-pressed={detail === blueprint.id}>
-            <span className="district-list-art"><DistrictStructureArt id={blueprint.id} district={district} progress={world.settlement.built[blueprint.id] >= district ? 100 : project?.blueprint === blueprint.id ? Math.floor(100 * project.work / workRequired(blueprint, district)) : 0}/></span>
+            <span className="district-list-art">{progress > 0 && <DistrictRasterStructure id={blueprint.id} district={district} progress={progress}/>}</span>
             <span className="district-list-copy"><strong>{identity.name}</strong><small>{identity.description}</small><em>{world.settlement.built[blueprint.id] >= district ? "Complete" : project?.blueprint === blueprint.id ? "Under construction" : "Future site"}</em></span>
           </button>;
         })}

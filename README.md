@@ -30,30 +30,32 @@ Each resident has their own energy, wellbeing, thoughts, memories and relationsh
 
 ## The Living Archipelago
 
-Origin is the first home and the visual heart of ECHO HABITAT.
+Origin is the first home and the visual and geographic heart of ECHO HABITAT.
 
-Every completed bridge reveals another district in the same world. The later islands share Origin's material language — deep moss, dark stone, pale glass and warm inhabited light — while developing their own terrain, landmark and settlement identity.
+Every completed bridge reveals another district in the same world. The outer districts use the same high-resolution environment and structure artwork as Origin instead of a separate vector illustration style. Moss-covered rock, natural paths, glass-and-metal habitat architecture and warm inhabited lighting remain consistent across the whole world.
+
+The atlas grows radially around Origin. Nearby districts form the first world ring; later districts occupy wider rings around the center. Routes connect new settlements back toward the nearest established inner ring, so the world reads as an expanding archipelago rather than a horizontal sequence.
 
 The atlas can be dragged, zoomed and explored. Select a district to focus it, inspect its settlement progress and enter its live view.
 
-Districts are not simple recolors. Each one has its own:
+Districts remain distinct through authored city kits rather than incompatible art styles. Each district has its own:
 
-- terrain silhouette and landmark
-- environmental character
-- settlement architecture
-- locally named structures
-- building composition and spatial layout
+- settlement identity and locally named structures
+- dominant structure types and realistic supporting clusters
+- building mix, scale, rotation and visual hierarchy
+- landmark and compact atlas identity
+- environmental and narrative character
 
-The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible settlement changes from island to island.
+The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible settlement composition changes strongly from district to district.
 
 ## Watch a world take shape
 
 - **Moving residents:** follow Moss, Lux and Echo through Origin and the outer districts.
 - **Shared decisions:** see council votes and the reasons behind them.
 - **Visible construction:** structures progress through foundation, frame and finishing stages.
-- **Unique settlements:** every district interprets the six settlement needs through its own architecture.
-- **Growing districts:** completed bridges reveal new islands without replacing the world already built.
-- **Interactive atlas:** drag, zoom, focus districts and follow the active frontier.
+- **Distinct city kits:** Grove City, Sunworks, Water Quarter, Archive City, Basalt Works, Terrace Commune, Glass Ridge, Wind Gardens, Flooded Sanctuary and Ember Enclave emphasize different realistic structures and settlement density.
+- **Growing world rings:** completed bridges reveal new islands around Origin without replacing the world already built.
+- **Interactive atlas:** drag, zoom, focus districts, fit the full world or follow the active frontier.
 - **Personal memories:** residents remember discoveries, encounters and what they build together.
 - **A shared chronicle:** browse the latest moments in the world's story.
 
@@ -89,7 +91,7 @@ The residents use authored, deterministic simulation rules. Their dialogue and d
 
 Built with Next.js, React and TypeScript. The Vercel version stores its world in private Vercel Blob storage.
 
-The project artwork establishes the visual language for Origin and the expanding archipelago.
+The project artwork establishes one visual language for Origin and every expanding district.
 
 ## Run the project
 
@@ -108,10 +110,10 @@ Configure these environment variables locally or in Vercel:
 
 ## Project status
 
-Version 0.5 — Living Archipelago design pass.
+Version 0.7 — Radial world and distinct city-kit pass.
 
 Moving residents · Council decisions · Construction phases  
-Living atlas · Unique district architecture · Persistent memories · Protected owner controls
+Photoreal district art · Origin-centered radial atlas · Distinct city kits · Persistent memories · Protected owner controls
 
 ---
 
