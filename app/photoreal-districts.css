@@ -1,11 +1,6 @@
-/* Photoreal district pass: the visible world uses the same raster art language as Origin. */
+/* Unified raster-world presentation: Origin and every district share one physical art language. */
 
-.archipelago-scene{
-  aspect-ratio:1.45;
-  min-height:0;
-  background:radial-gradient(ellipse at 48% 43%,#15241b 0,#0b1510 58%,#07100c 100%)!important;
-  overflow:hidden;
-}
+.archipelago-scene{aspect-ratio:1.45;min-height:0;background:radial-gradient(ellipse at 48% 43%,#15241b 0,#0b1510 58%,#07100c 100%)!important;overflow:hidden}
 .home-island,.growing-island{position:absolute;aspect-ratio:1.5;pointer-events:none}
 .home-island .habitat-art{width:100%;height:auto;mix-blend-mode:normal;mask-image:radial-gradient(ellipse at center,#000 55%,#000c 67%,transparent 82%);filter:drop-shadow(0 20px 25px rgba(0,0,0,.42))}
 .origin-reference{opacity:1!important;filter:none!important;transform:none!important}
@@ -19,24 +14,32 @@
 .district-raster-aux{position:absolute;inset:0}
 .district-aux-structure{position:absolute;width:16%;aspect-ratio:1;transform:translate(-50%,-84%) scale(var(--aux-scale)) rotate(var(--aux-rotate));transform-origin:50% 85%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.4));transition:opacity .3s ease}
 
-/* Each city kit gets a restrained material emphasis while keeping the same art family. */
 .district-kit-grove .district-raster-lighting{background:radial-gradient(ellipse at 47% 47%,rgba(183,207,132,.09),transparent 48%),radial-gradient(ellipse at 62% 59%,rgba(81,137,112,.07),transparent 54%)}
-.district-kit-sunworks .district-raster-lighting{background:radial-gradient(ellipse at 58% 44%,rgba(220,185,102,.11),transparent 48%),radial-gradient(ellipse at 43% 60%,rgba(94,126,103,.055),transparent 56%)}
+.district-kit-solar .district-raster-lighting{background:radial-gradient(ellipse at 58% 44%,rgba(220,185,102,.11),transparent 48%),radial-gradient(ellipse at 43% 60%,rgba(94,126,103,.055),transparent 56%)}
 .district-kit-water .district-raster-lighting{background:radial-gradient(ellipse at 48% 58%,rgba(83,157,166,.12),transparent 52%),radial-gradient(ellipse at 64% 40%,rgba(190,215,182,.05),transparent 50%)}
 .district-kit-archive .district-raster-lighting{opacity:.58}
-.district-kit-basalt .district-raster-lighting{background:radial-gradient(ellipse at 58% 48%,rgba(188,142,91,.08),transparent 45%),radial-gradient(ellipse at 38% 61%,rgba(78,102,88,.05),transparent 52%);opacity:.57}
+.district-kit-forge .district-raster-lighting{background:radial-gradient(ellipse at 58% 48%,rgba(188,142,91,.08),transparent 45%),radial-gradient(ellipse at 38% 61%,rgba(78,102,88,.05),transparent 52%);opacity:.57}
 .district-kit-terrace .district-raster-lighting{background:radial-gradient(ellipse at 48% 49%,rgba(187,211,129,.1),transparent 50%),radial-gradient(ellipse at 66% 63%,rgba(83,144,119,.07),transparent 54%)}
 .district-kit-glass .district-raster-lighting{background:radial-gradient(ellipse at 58% 42%,rgba(184,216,213,.12),transparent 47%),radial-gradient(ellipse at 43% 61%,rgba(116,154,145,.06),transparent 54%);opacity:.84}
 .district-kit-wind .district-raster-lighting{background:radial-gradient(ellipse at 50% 45%,rgba(194,211,168,.08),transparent 52%);opacity:.66}
 .district-kit-sanctuary .district-raster-lighting{background:radial-gradient(ellipse at 47% 58%,rgba(69,148,151,.11),transparent 50%),radial-gradient(ellipse at 66% 42%,rgba(175,199,176,.05),transparent 54%)}
 .district-kit-ember .district-raster-lighting{background:radial-gradient(ellipse at 57% 52%,rgba(214,143,85,.095),transparent 47%),radial-gradient(ellipse at 37% 42%,rgba(111,132,94,.045),transparent 52%);opacity:.58}
 
-.raster-structure-shell{position:absolute;inset:0;display:block;transform:scale(var(--raster-scale)) rotate(var(--raster-rotate));transform-origin:50% 88%;overflow:visible}
+/* Every visible structure is a unique composite of three different high-resolution sprite parts. */
+.district-unique-structure{position:absolute;inset:0;display:block;overflow:visible}
+.raster-structure-shell{position:absolute;inset:0;display:block;transform:scale(var(--raster-scale)) rotate(var(--raster-rotate));transform-origin:50% 88%;overflow:visible;filter:hue-rotate(var(--asset-hue,0deg))}
 .raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(.98) contrast(1.02)!important;clip-path:inset(calc(100% - var(--raster-progress,100%)) 0 0);opacity:.98}
+.raster-primary{position:absolute;inset:0;transform:scaleX(var(--asset-mirror,1));transform-origin:50% 88%}
+.raster-annex,.raster-crown{position:absolute;display:block;aspect-ratio:1;pointer-events:none;transform-origin:50% 85%}
+.raster-annex{left:var(--annex-x);top:var(--annex-y);width:48%;transform:translate(-50%,-70%) scale(var(--annex-scale)) scaleX(var(--asset-mirror,1))}
+.raster-crown{left:var(--crown-x);top:var(--crown-y);width:42%;transform:translate(-50%,-55%) scale(var(--crown-scale)) scaleX(calc(var(--asset-mirror,1) * -1))}
+.raster-annex>.structure-sprite,.raster-crown>.structure-sprite{position:absolute;inset:0;width:100%;height:100%;opacity:.94}
+.unique-world-asset:after{content:"";position:absolute;left:18%;right:18%;bottom:7%;height:8%;border-radius:50%;background:rgba(6,13,10,.34);filter:blur(3px);z-index:-1}
+
 .district-kit-grove .raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(1.03) brightness(.99)!important}
-.district-kit-sunworks .raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(.96) sepia(.04) brightness(1.02)!important}
+.district-kit-solar .raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(.96) sepia(.04) brightness(1.02)!important}
 .district-kit-water .raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(.94) brightness(1.03)!important}
-.district-kit-basalt .raster-structure-sprite{filter:drop-shadow(0 6px 7px rgba(0,0,0,.5)) saturate(.88) brightness(.94)!important}
+.district-kit-forge .raster-structure-sprite{filter:drop-shadow(0 6px 7px rgba(0,0,0,.5)) saturate(.88) brightness(.94)!important}
 .district-kit-glass .raster-structure-sprite{filter:drop-shadow(0 5px 7px rgba(0,0,0,.45)) saturate(.9) brightness(1.06)!important}
 .district-kit-ember .raster-structure-sprite{filter:drop-shadow(0 6px 7px rgba(0,0,0,.5)) saturate(.9) sepia(.06) brightness(.96)!important}
 
@@ -52,7 +55,7 @@
 .district-list-art .raster-structure-shell{inset:0}
 .district-list-art .raster-structure-sprite{filter:drop-shadow(0 4px 4px rgba(0,0,0,.38)) saturate(.96)!important}
 
-/* Atlas: one radial world around Origin. */
+/* Atlas: organic scatter around Origin, deliberately without geometric orbit rings. */
 .atlas-viewport{background:radial-gradient(ellipse at 50% 48%,#17372f 0,#0d241e 43%,#081914 72%,#06120f 100%)!important}
 .atlas-viewport:before{opacity:.2!important}
 .atlas-island>.district-raster-stack{position:absolute;inset:0;width:300px;height:200px}
@@ -61,18 +64,17 @@
 .atlas-far .district-raster-aux{display:none}
 .atlas-medium .district-aux-structure{opacity:.5!important}
 .atlas-building .raster-structure-shell{inset:0}
+.atlas-building .raster-annex{width:42%}.atlas-building .raster-crown{width:36%}
 .atlas-building .raster-structure-sprite{filter:drop-shadow(0 4px 4px rgba(0,0,0,.5)) saturate(.96)!important}
-.atlas-silhouette{display:none!important}
+.atlas-silhouette,.atlas-orbit-ring{display:none!important}
 
-.atlas-orbit-ring{fill:none;stroke:#9ab29f;stroke-width:1;stroke-opacity:.075;stroke-dasharray:2 18;vector-effect:non-scaling-stroke}
-.atlas-orbit-ring:nth-of-type(2n){stroke-opacity:.045;stroke-dasharray:1 24}
-.atlas-route{stroke:#9eb59c!important;stroke-opacity:.28!important;stroke-dasharray:3 11!important;stroke-width:1.05!important;filter:drop-shadow(0 0 3px rgba(151,190,169,.08))!important;animation:none!important}
-.atlas-route.is-primary{stroke-opacity:.38!important}
+.atlas-route{stroke:#9eb59c!important;stroke-opacity:.24!important;stroke-dasharray:3 12!important;stroke-width:1.05!important;filter:drop-shadow(0 0 3px rgba(151,190,169,.07))!important;animation:none!important}
+.atlas-route.is-primary{stroke-opacity:.34!important}
 .atlas-route-shadow{stroke:#020807!important;stroke-opacity:.3!important;stroke-width:4!important}
-.atlas-route-node{fill:#c4d6b8;opacity:.24;filter:drop-shadow(0 0 3px rgba(190,215,198,.2))}
+.atlas-route-node{fill:#c4d6b8;opacity:.2;filter:drop-shadow(0 0 3px rgba(190,215,198,.18))}
 
 .atlas-island[data-district="0"]{z-index:8;transform:scale(1.2);transform-origin:50% 50%}
-.atlas-island[data-district="0"] .atlas-home-art{filter:drop-shadow(0 0 18px rgba(154,195,163,.16)) drop-shadow(0 18px 20px rgba(0,0,0,.52));saturate:1.02}
+.atlas-island[data-district="0"] .atlas-home-art{filter:drop-shadow(0 0 18px rgba(154,195,163,.16)) drop-shadow(0 18px 20px rgba(0,0,0,.52)) saturate(1.02)}
 .atlas-origin-core{position:absolute;left:50%;top:50%;width:245px;height:155px;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(190,216,193,.12);box-shadow:0 0 34px rgba(113,164,139,.08),inset 0 0 30px rgba(113,164,139,.04);pointer-events:none}
 .atlas-origin-core:after{content:"";position:absolute;inset:12px;border-radius:50%;border:1px dashed rgba(198,218,195,.08)}
 
@@ -91,13 +93,5 @@
 
 .living-world-atmosphere,.world-origin-link,.district-life-layer{display:none!important}
 
-@media(max-width:760px){
-  .district-aux-structure{width:18%}
-  .custom-structure{width:24%}
-  .atlas-island[data-district="0"]{transform:scale(1.12)}
-  .atlas-island-label{padding:4px 6px!important}
-  .atlas-landmark-marker{width:18px;height:18px;font-size:9px}
-}
-@media(prefers-reduced-motion:reduce){
-  .district-aux-structure,.raster-structure-sprite{transition:none}
-}
+@media(max-width:760px){.district-aux-structure{width:18%}.custom-structure{width:24%}.atlas-island[data-district="0"]{transform:scale(1.12)}.atlas-island-label{padding:4px 6px!important}.atlas-landmark-marker{width:18px;height:18px;font-size:9px}}
+@media(prefers-reduced-motion:reduce){.district-aux-structure,.raster-structure-sprite{transition:none}}
