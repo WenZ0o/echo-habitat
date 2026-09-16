@@ -32,26 +32,26 @@ Each resident has their own energy, wellbeing, thoughts, memories and relationsh
 
 Origin is the first home and the visual heart of ECHO HABITAT.
 
-Every completed bridge reveals another district in the same world. The later islands share Origin's material language — deep moss, dark stone, pale glass and warm inhabited light — while developing their own terrain, landmark and settlement identity.
+Every completed bridge reveals another district in the same world. The outer districts now use the same high-resolution environment and structure artwork as Origin instead of a separate vector illustration style. Moss-covered rock, natural paths, glass-and-metal habitat architecture and warm inhabited lighting remain consistent across the whole world.
 
 The atlas can be dragged, zoomed and explored. Select a district to focus it, inspect its settlement progress and enter its live view.
 
-Districts are not simple recolors. Each one has its own:
+Districts remain distinct through their city plan rather than incompatible art styles. Each district has its own:
 
-- terrain silhouette and landmark
-- environmental character
-- settlement architecture
-- locally named structures
-- building composition and spatial layout
+- settlement identity and locally named structures
+- building mix and visual hierarchy
+- structure scale and arrangement
+- supporting service modules that appear as the district develops
+- environmental and narrative identity
 
-The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible settlement changes from island to island.
+The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible settlement composition changes from district to district.
 
 ## Watch a world take shape
 
 - **Moving residents:** follow Moss, Lux and Echo through Origin and the outer districts.
 - **Shared decisions:** see council votes and the reasons behind them.
 - **Visible construction:** structures progress through foundation, frame and finishing stages.
-- **Unique settlements:** every district interprets the six settlement needs through its own architecture.
+- **Unique city plans:** districts emphasize different realistic structure types and settlement layouts.
 - **Growing districts:** completed bridges reveal new islands without replacing the world already built.
 - **Interactive atlas:** drag, zoom, focus districts and follow the active frontier.
 - **Personal memories:** residents remember discoveries, encounters and what they build together.
@@ -89,7 +89,7 @@ The residents use authored, deterministic simulation rules. Their dialogue and d
 
 Built with Next.js, React and TypeScript. The Vercel version stores its world in private Vercel Blob storage.
 
-The project artwork establishes the visual language for Origin and the expanding archipelago.
+The project artwork establishes one visual language for Origin and every expanding district.
 
 ## Run the project
 
@@ -108,10 +108,10 @@ Configure these environment variables locally or in Vercel:
 
 ## Project status
 
-Version 0.5 — Living Archipelago design pass.
+Version 0.6 — Unified world art pass.
 
 Moving residents · Council decisions · Construction phases  
-Living atlas · Unique district architecture · Persistent memories · Protected owner controls
+Photoreal district art · Living atlas · Unique city plans · Persistent memories · Protected owner controls
 
 ---
 
