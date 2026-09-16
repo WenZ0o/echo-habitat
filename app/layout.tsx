@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./world.css";
 import "./living-archipelago.css";
+import "./district-architecture.css";
 
 export const metadata: Metadata = {
   title: "ECHO HABITAT — A small world, unfolding",

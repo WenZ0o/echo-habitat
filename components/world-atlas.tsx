@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerE
 import { BLUEPRINTS, districtOf, workRequired } from "@/lib/habitat/construction";
 import { PROFILES, RESIDENT_IDS } from "@/lib/habitat/residents";
 import type { ResidentId, World } from "@/lib/habitat/types";
-import { biome, BUILDING_ORDER, buildingPosition, IslandTerrain, islandOutlinePoints, noise, residentPosition } from "./island-terrain";
+import { biome, buildingPosition, IslandTerrain, islandOutlinePoints, noise, residentPosition } from "./island-terrain";
+import { DistrictStructureArt, districtArchitecture, districtStructure } from "./district-architecture";
 
 type Camera = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
@@ -63,10 +64,12 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
   minRef.current = minimum;
 
   const selectedBiome = chosen > 0 ? biome(chosen) : null;
+  const selectedArchitecture = chosen > 0 ? districtArchitecture(chosen) : null;
   const selectedCompleted = chosen > 0 ? BLUEPRINTS.filter(item => world.settlement.built[item.id] >= chosen).length : 0;
   const selectedResidents = world.residents.filter(resident => resident.district === chosen);
   const selectedProject = chosen > 0 && world.settlement.project?.district === chosen ? world.settlement.project : null;
   const selectedProjectBlueprint = selectedProject ? BLUEPRINTS.find(item => item.id === selectedProject.blueprint) : null;
+  const selectedProjectIdentity = selectedProject ? districtStructure(selectedProject.blueprint, chosen) : null;
   const fractionalProgress = selectedProject && selectedProjectBlueprint
     ? Math.min(1, selectedProject.work / workRequired(selectedProjectBlueprint, chosen)) / BLUEPRINTS.length
     : 0;
@@ -183,7 +186,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
       <div className="atlas-title-block">
         <span className="eyebrow">THE LIVING ARCHIPELAGO</span>
         <h3>A world growing island by island.</h3>
-        <p>{latest} {latest === 1 ? "district" : "districts"} beyond Origin · drag to explore · scroll or pinch to zoom</p>
+        <p>{latest} {latest === 1 ? "district" : "districts"} beyond Origin · every island develops its own architecture</p>
       </div>
       <div className="atlas-tools" aria-label="Atlas controls">
         <button onClick={() => { setFollowing(false); setCamera(current => zoomAt(current, 1 / 1.25, size.width / 2, size.height / 2, minimum)); }} aria-label="Zoom out">−</button>
@@ -232,10 +235,11 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
 
         {visible.map(node => {
           const islandBiome = node.district ? biome(node.district) : null;
+          const islandArchitecture = node.district ? districtArchitecture(node.district) : null;
           const complete = node.district ? BLUEPRINTS.filter(item => world.settlement.built[item.id] >= node.district).length : 0;
           const isChosen = chosen === node.district;
           return <button key={node.district} data-district={node.district} className={`atlas-island${isChosen ? " is-selected" : ""}${node.district === latest ? " is-frontier" : ""}`} style={{ left: node.x, top: node.y, "--island-accent": islandBiome?.accent ?? "#d5dda9" } as CSSProperties}
-            aria-label={node.district === 0 ? "Origin, the first home" : `District ${node.district}, ${islandBiome?.name}. Landmark: ${islandBiome?.landmark}.`}
+            aria-label={node.district === 0 ? "Origin, the first home" : `District ${node.district}, ${islandBiome?.name}. ${islandArchitecture?.title}. Landmark: ${islandBiome?.landmark}.`}
             onClick={event => { if (event.detail === 0) pick(node.district); }}>
             <span className="atlas-island-halo" aria-hidden="true"/>
             {node.district === 0
@@ -248,14 +252,17 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
               const built = world.settlement.built[blueprint.id] >= node.district;
               const active = world.settlement.project?.district === node.district && world.settlement.project.blueprint === blueprint.id;
               if (!built && !active) return null;
-              const position = buildingPosition(blueprint.id, node.district), index = BUILDING_ORDER.indexOf(blueprint.id);
-              return <span key={blueprint.id} className={`atlas-building${active ? " is-building" : ""}`} style={{ left: `${position.x}%`, top: `${position.y}%`, opacity: active ? .58 : 1, "--sprite-x": `${index % 3 * 50}%`, "--sprite-y": `${Math.floor(index / 3) * 100}%` } as CSSProperties}><span className="structure-sprite"/></span>;
+              const position = buildingPosition(blueprint.id, node.district);
+              const activeProgress = active ? Math.floor(100 * (world.settlement.project?.work ?? 0) / workRequired(blueprint, node.district)) : 100;
+              return <span key={blueprint.id} className={`atlas-building atlas-custom-building${active ? " is-building" : ""}`} style={{ left: `${position.x}%`, top: `${position.y}%`, opacity: active ? .72 : 1 } as CSSProperties}>
+                <DistrictStructureArt id={blueprint.id} district={node.district} progress={activeProgress}/>
+              </span>;
             })}
 
             <span className="atlas-island-label">
               <b>{node.district === 0 ? "ORIGIN" : String(node.district).padStart(2, "0")}</b>
               {(isChosen || detailLevel === "near") && <span>{node.district === 0 ? "The first home" : islandBiome?.shortName}</span>}
-              {isChosen && node.district > 0 && <small>{complete}/6 structures</small>}
+              {isChosen && node.district > 0 && <small>{complete}/6 · {islandArchitecture?.title.replace("The ", "")}</small>}
             </span>
           </button>;
         })}
@@ -282,9 +289,11 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
           <h4>{selectedBiome?.name}</h4>
           <p>{selectedBiome?.mood}</p>
           <div className="atlas-landmark"><span>LANDMARK</span><strong>{selectedBiome?.landmark}</strong></div>
+          <div className="atlas-settlement-identity"><span>SETTLEMENT</span><strong>{selectedArchitecture?.title}</strong><small>{selectedArchitecture?.style}</small></div>
+          {selectedProjectIdentity && <div className="atlas-current-build"><span>TAKING SHAPE</span><strong>{selectedProjectIdentity.name}</strong></div>}
           <div className="atlas-progress-row"><span>Settlement</span><b>{districtProgress}%</b></div>
           <div className="atlas-progress" aria-label={`District settlement ${districtProgress}% complete`}><i style={{ width: `${districtProgress}%` }}/></div>
-          <div className="atlas-card-meta"><span><b>{selectedCompleted}/6</b> structures</span><span><b>{selectedResidents.length}</b> present</span></div>
+          <div className="atlas-card-meta"><span><b>{selectedCompleted}/6</b> unique structures</span><span><b>{selectedResidents.length}</b> present</span></div>
           <button className="atlas-enter" onClick={() => onDistrict(chosen)}>Enter district <span>↗</span></button>
         </>}
       </div>
@@ -292,7 +301,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
 
     <div className="atlas-footer">
       <span><i className="atlas-live-dot"/>World state live</span>
-      <span>{detailLevel === "far" ? "Silhouette view" : detailLevel === "medium" ? "Terrain view" : "Life view"}</span>
+      <span>{detailLevel === "far" ? "Silhouette view" : detailLevel === "medium" ? "Terrain + settlement view" : "Life view"}</span>
       <span className="atlas-scroll-note">Drag the atlas · scroll outside it to move the page</span>
     </div>
   </section>;
