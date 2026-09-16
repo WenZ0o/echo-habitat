@@ -4,12 +4,7 @@ import type { BlueprintId } from "@/lib/habitat/types";
 const ORDER: BlueprintId[] = ["garden", "solar", "lookout", "cistern", "workshop", "bridge"];
 
 type Aux = { x: number; y: number; scale: number; rotate?: number };
-type CityPlan = {
-  label: string;
-  family: string;
-  mark: string;
-  aux: Aux[];
-};
+type CityPlan = { label: string; family: string; mark: string; aux: Aux[] };
 type AssetRecipe = {
   assetId: string;
   primary: number;
@@ -105,25 +100,16 @@ export function districtCityPlan(district: number): CityPlan {
 }
 
 function spriteVars(sprite: number) {
-  return {
-    "--sprite-x": `${sprite % 3 * 50}%`,
-    "--sprite-y": `${Math.floor(sprite / 3) * 100}%`,
-  } as CSSProperties;
+  return { "--sprite-x": `${sprite % 3 * 50}%`, "--sprite-y": `${Math.floor(sprite / 3) * 100}%` } as CSSProperties;
 }
 
 function UniqueRasterAsset({ assetIndex, className = "" }: { assetIndex: number; className?: string }) {
   const recipe = assetRecipe(assetIndex);
   const css = {
-    "--raster-scale": String(recipe.scale),
-    "--raster-rotate": `${recipe.rotate}deg`,
-    "--annex-x": `${recipe.annexX}%`,
-    "--annex-y": `${recipe.annexY}%`,
-    "--annex-scale": String(recipe.annexScale),
-    "--crown-x": `${recipe.crownX}%`,
-    "--crown-y": `${recipe.crownY}%`,
-    "--crown-scale": String(recipe.crownScale),
-    "--asset-mirror": recipe.mirror ? -1 : 1,
-    "--asset-hue": `${recipe.hue}deg`,
+    "--raster-scale": String(recipe.scale), "--raster-rotate": `${recipe.rotate}deg`,
+    "--annex-x": `${recipe.annexX}%`, "--annex-y": `${recipe.annexY}%`, "--annex-scale": String(recipe.annexScale),
+    "--crown-x": `${recipe.crownX}%`, "--crown-y": `${recipe.crownY}%`, "--crown-scale": String(recipe.crownScale),
+    "--asset-mirror": recipe.mirror ? -1 : 1, "--asset-hue": `${recipe.hue}deg`,
   } as CSSProperties;
   return <span className={`raster-structure-shell unique-world-asset ${className}`} data-world-asset={recipe.assetId} style={css}>
     <span className="structure-sprite raster-structure-sprite raster-primary" style={spriteVars(recipe.primary)}/>
@@ -133,10 +119,7 @@ function UniqueRasterAsset({ assetIndex, className = "" }: { assetIndex: number;
 }
 
 export function DistrictRasterStructure({ id, district, progress = 100, className = "" }: {
-  id: BlueprintId;
-  district: number;
-  progress?: number;
-  className?: string;
+  id: BlueprintId; district: number; progress?: number; className?: string;
 }) {
   return <span className="district-unique-structure" style={{ "--raster-progress": `${Math.max(0, Math.min(100, progress))}%` } as CSSProperties}>
     <UniqueRasterAsset assetIndex={structureAssetIndex(district, id)} className={className}/>
@@ -144,10 +127,7 @@ export function DistrictRasterStructure({ id, district, progress = 100, classNam
 }
 
 export function DistrictRasterIsland({ district, completed = 0, power = 100, compact = false }: {
-  district: number;
-  completed?: number;
-  power?: number;
-  compact?: boolean;
+  district: number; completed?: number; power?: number; compact?: boolean;
 }) {
   const plan = districtCityPlan(district);
   const visibleAux = Math.min(plan.aux.length, Math.max(0, completed - 1));
