@@ -17,20 +17,27 @@ export type IslandBiome = {
   shadow: string;
   accent: string;
   water: string;
+  glass: string;
+  warm: string;
   shape: IslandShape;
 };
 
+/*
+ * All districts deliberately share Origin's material language: deep moss,
+ * charcoal stone, muted brass, pale glass and warm inhabited light.
+ * Biomes vary topology and emphasis rather than becoming disconnected themes.
+ */
 export const BIOMES: IslandBiome[] = [
-  { name: "Verdant Canopy", shortName: "Canopy", landmark: "The Elder Tree", mood: "Ancient green refuge", ground: "#526f47", ground2: "#304d3a", edge: "#aec887", rock: "#304139", shadow: "#172821", accent: "#d8d79b", water: "#5faaa0", shape: "canopy" },
-  { name: "Amber Mesa", shortName: "Mesa", landmark: "The Sun Pillar", mood: "Warm wind over old stone", ground: "#a66e43", ground2: "#79503c", edge: "#e4bd80", rock: "#5d3c35", shadow: "#2d2927", accent: "#f0d295", water: "#6e9e91", shape: "mesa" },
-  { name: "Moonlit Lagoon", shortName: "Lagoon", landmark: "The Moon Pool", mood: "Shallow water and silver light", ground: "#688a6b", ground2: "#456f68", edge: "#d3d6a5", rock: "#385455", shadow: "#173338", accent: "#bde6da", water: "#4a9da0", shape: "crescent" },
-  { name: "Ancient Ruins", shortName: "Ruins", landmark: "The Broken Gate", mood: "Stone memory under new growth", ground: "#737b5d", ground2: "#4f604b", edge: "#c1c6a7", rock: "#424a43", shadow: "#202a27", accent: "#d3c89b", water: "#5c8f82", shape: "ruins" },
-  { name: "Basalt Crown", shortName: "Basalt", landmark: "The Obsidian Spire", mood: "Dark cliffs above quiet water", ground: "#4f6555", ground2: "#354b48", edge: "#93ae91", rock: "#293538", shadow: "#141f22", accent: "#aac6b6", water: "#426d70", shape: "crown" },
-  { name: "Rice Terraces", shortName: "Terraces", landmark: "The Water Shrine", mood: "Patient water across stepped fields", ground: "#78924f", ground2: "#526d48", edge: "#d2d78e", rock: "#465341", shadow: "#203027", accent: "#ece0aa", water: "#6ba6a0", shape: "terraces" },
-  { name: "Crystal Crags", shortName: "Crystal", landmark: "The Crystal Heart", mood: "Cold mineral light", ground: "#657484", ground2: "#4d5d72", edge: "#c4d0dd", rock: "#35394b", shadow: "#202333", accent: "#c5e1ea", water: "#527f96", shape: "crystal" },
-  { name: "Wind Gardens", shortName: "Wind", landmark: "The Wind Arch", mood: "Open grass beneath a high sky", ground: "#78906a", ground2: "#536e60", edge: "#d1d7aa", rock: "#49564e", shadow: "#24332d", accent: "#e5ddba", water: "#6b9f99", shape: "windswept" },
-  { name: "Sunken Sanctuary", shortName: "Sanctuary", landmark: "The Drowned Temple", mood: "A ruin held between land and tide", ground: "#5e7869", ground2: "#3f625d", edge: "#b9c99f", rock: "#394b48", shadow: "#172c2d", accent: "#c9d7ad", water: "#438489", shape: "sanctuary" },
-  { name: "Ashen Bloom", shortName: "Bloom", landmark: "The Ember Tree", mood: "New color on black earth", ground: "#665f4f", ground2: "#49473f", edge: "#b5ae87", rock: "#343536", shadow: "#1c2021", accent: "#e18f62", water: "#526f70", shape: "caldera" },
+  { name: "Verdant Canopy", shortName: "Canopy", landmark: "The Elder Tree", mood: "An old grove protected beneath a light canopy", ground: "#52694c", ground2: "#32473d", edge: "#99ad7f", rock: "#2e3d38", shadow: "#182521", accent: "#c7cf91", water: "#5f9087", glass: "#a9c9bd", warm: "#d7bd79", shape: "canopy" },
+  { name: "Amber Mesa", shortName: "Mesa", landmark: "The Sun Pillar", mood: "Weathered stone warmed by the same quiet habitat light", ground: "#657054", ground2: "#444c3f", edge: "#a9ad83", rock: "#403d35", shadow: "#211f1c", accent: "#cbbb86", water: "#657f78", glass: "#b9c9b8", warm: "#d4ad70", shape: "mesa" },
+  { name: "Moonlit Lagoon", shortName: "Lagoon", landmark: "The Moon Pool", mood: "A sheltered basin where glass and water hold the light", ground: "#536c5d", ground2: "#354d47", edge: "#a8b99a", rock: "#2f4140", shadow: "#182827", accent: "#bdcba4", water: "#5f9992", glass: "#b6d2c8", warm: "#d0b77d", shape: "crescent" },
+  { name: "Ancient Ruins", shortName: "Ruins", landmark: "The Broken Gate", mood: "Old masonry folded into a new living settlement", ground: "#5e6952", ground2: "#3e4a3f", edge: "#a7af8e", rock: "#3b403b", shadow: "#202723", accent: "#c1bf91", water: "#607f76", glass: "#afc4b6", warm: "#d1b477", shape: "ruins" },
+  { name: "Basalt Crown", shortName: "Basalt", landmark: "The Obsidian Spire", mood: "Dark mineral shelves cut by thin lines of inhabited light", ground: "#4b5d50", ground2: "#30423e", edge: "#879c81", rock: "#293334", shadow: "#141d1d", accent: "#afbd93", water: "#4d7470", glass: "#9ebdb5", warm: "#caa86f", shape: "crown" },
+  { name: "Rice Terraces", shortName: "Terraces", landmark: "The Water Shrine", mood: "Stepped gardens and water following the island's contours", ground: "#64764e", ground2: "#405444", edge: "#acba82", rock: "#37433b", shadow: "#1d2b25", accent: "#c9cc8f", water: "#6a9790", glass: "#b5cab8", warm: "#d1b875", shape: "terraces" },
+  { name: "Crystal Crags", shortName: "Crags", landmark: "The Glass Heart", mood: "Pale mineral ribs reflecting the habitat's soft light", ground: "#56665d", ground2: "#394943", edge: "#a3b2a4", rock: "#30383a", shadow: "#191f21", accent: "#b9c6a5", water: "#5b807c", glass: "#bfd3cc", warm: "#cfb173", shape: "crystal" },
+  { name: "Wind Gardens", shortName: "Wind", landmark: "The Wind Arch", mood: "Low gardens and flexible structures beneath a wide canopy", ground: "#607057", ground2: "#3e5045", edge: "#a8b68e", rock: "#36413c", shadow: "#1c2925", accent: "#c2c998", water: "#648982", glass: "#afc8bf", warm: "#d0b67b", shape: "windswept" },
+  { name: "Sunken Sanctuary", shortName: "Sanctuary", landmark: "The Drowned Temple", mood: "Half-flooded stone chambers reclaimed as living rooms", ground: "#53695e", ground2: "#344c47", edge: "#9fb39a", rock: "#34413e", shadow: "#192725", accent: "#bec79a", water: "#538c88", glass: "#afd0c7", warm: "#ceb078", shape: "sanctuary" },
+  { name: "Ashen Bloom", shortName: "Bloom", landmark: "The Ember Tree", mood: "Dark earth carrying new growth and warm glass light", ground: "#555d4d", ground2: "#3c443c", edge: "#9ca681", rock: "#323634", shadow: "#1b201e", accent: "#c0b889", water: "#5b7773", glass: "#a8c3b9", warm: "#cf9d6d", shape: "caldera" },
 ];
 
 export function biome(district: number) {
@@ -53,109 +60,141 @@ export function buildingPosition(id: BlueprintId, district: number) {
 export function residentPosition(position: Position, district: number) {
   if (!district) return position;
   const nearest = BLUEPRINTS.reduce((best, item) =>
-    Math.hypot(item.x - position.x, item.y - position.y) <
-    Math.hypot(best.x - position.x, best.y - position.y) ? item : best);
+    Math.hypot(item.x - position.x, item.y - position.y) < Math.hypot(best.x - position.x, best.y - position.y) ? item : best);
   const target = buildingPosition(nearest.id, district);
   return { x: position.x + target.x - nearest.x, y: position.y + target.y - nearest.y };
 }
 
 function shapeRadius(shape: IslandShape, angle: number, district: number, index: number) {
   const c = Math.cos(angle), s = Math.sin(angle);
-  const jitter = .94 + noise(district * 41 + index * 3) * .1;
-  if (shape === "crescent") return jitter * (c > .42 ? .72 : 1.03);
-  if (shape === "mesa") return jitter * (.98 + Math.cos(angle * 4) * .035);
-  if (shape === "crown") return jitter * (.93 + Math.sin(angle * 5 + .8) * .11);
-  if (shape === "terraces") return jitter * (1 + Math.cos(angle * 2) * .08);
-  if (shape === "crystal") return jitter * (.91 + Math.abs(Math.sin(angle * 3)) * .1);
-  if (shape === "windswept") return jitter * (c < -.25 ? 1.1 : .94);
-  if (shape === "sanctuary") return jitter * (s > .45 && c > -.2 ? .76 : 1.02);
-  if (shape === "caldera") return jitter * (.96 + Math.sin(angle * 4 + .6) * .06);
-  if (shape === "ruins") return jitter * (.96 + Math.cos(angle * 3) * .05);
-  return jitter * (1 + Math.sin(angle * 3 + district) * .035);
+  const jitter = .965 + noise(district * 41 + index * 3) * .065;
+  if (shape === "crescent") return jitter * (c > .45 ? .78 : 1.02);
+  if (shape === "mesa") return jitter * (.985 + Math.cos(angle * 4) * .022);
+  if (shape === "crown") return jitter * (.95 + Math.sin(angle * 5 + .8) * .065);
+  if (shape === "terraces") return jitter * (1 + Math.cos(angle * 2) * .045);
+  if (shape === "crystal") return jitter * (.95 + Math.abs(Math.sin(angle * 3)) * .055);
+  if (shape === "windswept") return jitter * (c < -.3 ? 1.065 : .97);
+  if (shape === "sanctuary") return jitter * (s > .5 && c > -.2 ? .83 : 1.01);
+  if (shape === "caldera") return jitter * (.98 + Math.sin(angle * 4 + .6) * .035);
+  if (shape === "ruins") return jitter * (.98 + Math.cos(angle * 3) * .028);
+  return jitter * (1 + Math.sin(angle * 3 + district) * .02);
 }
 
 export function islandOutlinePoints(district: number) {
   const b = biome(district);
-  return Array.from({ length: 28 }, (_, i) => {
-    const angle = i / 28 * Math.PI * 2;
+  return Array.from({ length: 32 }, (_, i) => {
+    const angle = i / 32 * Math.PI * 2;
     const radius = shapeRadius(b.shape, angle, district, i);
-    const wide = b.shape === "windswept" ? 139 : b.shape === "terraces" ? 142 : 132;
-    const high = b.shape === "crown" || b.shape === "crystal" ? 66 : 59;
-    return {
-      x: 150 + Math.cos(angle) * wide * radius,
-      y: 76 + Math.sin(angle) * high * radius,
-    };
+    const wide = b.shape === "windswept" ? 137 : b.shape === "terraces" ? 139 : 132;
+    const high = b.shape === "crown" || b.shape === "crystal" ? 49 : 46;
+    return { x: 150 + Math.cos(angle) * wide * radius, y: 92 + Math.sin(angle) * high * radius };
   });
 }
 
-function Tree({ x, y, scale = 1, warm = false }: { x: number; y: number; scale?: number; warm?: boolean }) {
+function Tree({ x, y, scale = 1, tint = "#47664f" }: { x: number; y: number; scale?: number; tint?: string }) {
   return <g transform={`translate(${x} ${y}) scale(${scale})`}>
-    <path d="M0 13C-1 5 1-4 2-13" stroke={warm ? "#584032" : "#4a4431"} strokeWidth="3.2" strokeLinecap="round"/>
-    <ellipse cx="0" cy="-17" rx="9" ry="7" fill={warm ? "#80624a" : "#315640"}/>
-    <ellipse cx="-7" cy="-13" rx="7" ry="6" fill={warm ? "#a07149" : "#426b4b"}/>
-    <ellipse cx="7" cy="-13" rx="7" ry="6" fill={warm ? "#98634b" : "#547755"}/>
+    <path d="M0 12C-1 5 0-3 2-12" stroke="#554937" strokeWidth="2.7" strokeLinecap="round"/>
+    <ellipse cx="0" cy="-15" rx="8.2" ry="6.3" fill={tint}/>
+    <ellipse cx="-6" cy="-11" rx="6.5" ry="5.5" fill="#385b45"/>
+    <ellipse cx="7" cy="-11" rx="6.2" ry="5.2" fill="#587259"/>
+    <ellipse cx="1" cy="-19" rx="4.8" ry="3.5" fill="#78906d" opacity=".58"/>
+  </g>;
+}
+
+function HabitatCanopy({ district, glass, warm }: { district: number; glass: string; warm: string }) {
+  const shift = (noise(district * 91) - .5) * 12;
+  return <g className="terrain-habitat-canopy" transform={`translate(${shift} 0)`}>
+    <path d="M72 101Q83 30 151 25Q221 29 232 101" fill="none" stroke={glass} strokeWidth="1.25" opacity=".37"/>
+    <path d="M91 99Q101 43 151 38Q201 43 213 99" fill="none" stroke={glass} strokeWidth=".8" opacity=".22"/>
+    <path d="M151 27V99M109 43Q129 65 130 100M194 44Q174 65 172 100" fill="none" stroke={glass} strokeWidth=".75" opacity=".19"/>
+    <ellipse cx="151" cy="99" rx="80" ry="10" fill="none" stroke={glass} strokeWidth="1" opacity=".23"/>
+    <path d="M83 79Q151 51 221 79" fill="none" stroke="#edf3df" strokeWidth=".55" opacity=".12"/>
+    <circle cx="151" cy="37" r="2.3" fill={warm} opacity=".75"/>
   </g>;
 }
 
 function Landmark({ district }: { district: number }) {
   const kind = (district - 1) % BIOMES.length;
-  if (kind === 0) return <g className="terrain-landmark" transform="translate(151 61)"><path d="M-2 34C-7 12-4-8 2-33M0 5l-24-18M1-5l25-19" stroke="#65523b" strokeWidth="6" strokeLinecap="round"/><ellipse cy="-36" rx="30" ry="18" fill="#315c43"/><ellipse cx="-22" cy="-27" rx="21" ry="15" fill="#416e4d"/><ellipse cx="22" cy="-27" rx="22" ry="16" fill="#567d54"/><ellipse cy="-46" rx="18" ry="12" fill="#789665" opacity=".8"/></g>;
-  if (kind === 1) return <g className="terrain-landmark" transform="translate(154 62)"><path d="M-13 31L-6-37 8-48 15 31Z" fill="#704637" stroke="#e2ad70" strokeWidth="2"/><path d="M-5-31L8-38M-8-9L11-16M-10 14L13 7" stroke="#d98f55" strokeWidth="2" opacity=".65"/></g>;
-  if (kind === 2) return <g className="terrain-landmark"><ellipse cx="149" cy="73" rx="39" ry="22" fill="#438b91" stroke="#d7d9b0" strokeWidth="5"/><ellipse cx="149" cy="72" rx="25" ry="13" fill="#73c4bf" opacity=".7"/><path d="M119 77Q149 95 181 76" fill="none" stroke="#dcebd8" strokeWidth="1.5" opacity=".7"/></g>;
-  if (kind === 3) return <g className="terrain-landmark" fill="none" stroke="#bfc4a9" strokeWidth="6"><path d="M122 91V53Q122 31 149 31Q176 31 176 53V91"/><path d="M132 91V57Q132 43 149 43Q166 43 166 57V91" strokeWidth="3"/><path d="M111 92H188" stroke="#626d5f" strokeWidth="5"/></g>;
-  if (kind === 4) return <g className="terrain-landmark" transform="translate(151 70)"><path d="M-13 24L-6-30 3-54 12-20 18 24Z" fill="#26343a" stroke="#98b8ad" strokeWidth="2"/><path d="M3-48L1 10" stroke="#729991" strokeWidth="2" opacity=".7"/></g>;
-  if (kind === 5) return <g className="terrain-landmark" transform="translate(150 73)"><path d="M-25 18H25L16-8H-17Z" fill="#6e7257" stroke="#dfd49d" strokeWidth="2"/><path d="M-13-7V-24M13-7V-24M-18-24H18" stroke="#d8c98e" strokeWidth="4"/><path d="M-29 20Q0 34 30 20" fill="none" stroke="#73b2aa" strokeWidth="5"/></g>;
-  if (kind === 6) return <g className="terrain-landmark" transform="translate(151 72)"><path d="M-18 19L-8-35 1-52 8-22 18 20Z" fill="#7c9eb8" stroke="#d1e5ec" strokeWidth="2"/><path d="M-4 14L1-45M8-18L13 16" stroke="#c8f1ef" strokeWidth="2" opacity=".75"/></g>;
-  if (kind === 7) return <g className="terrain-landmark" transform="translate(150 68)" fill="none" stroke="#ded7ad" strokeWidth="6" strokeLinecap="round"><path d="M-29 24Q-27-18 0-18Q27-18 29 24"/><path d="M-17 24Q-15-7 0-7Q15-7 17 24" strokeWidth="3"/></g>;
-  if (kind === 8) return <g className="terrain-landmark" transform="translate(151 78)"><path d="M-31 13H31L22-15H-22Z" fill="#53635b" stroke="#aab99a" strokeWidth="2"/><path d="M-18-14V-35H18V-14M-5-35V-46H6V-35" fill="none" stroke="#c2c9a5" strokeWidth="4"/><path d="M-37 16Q0 30 38 15" fill="none" stroke="#5ca2a1" strokeWidth="7" opacity=".8"/></g>;
-  return <g className="terrain-landmark" transform="translate(151 64)"><path d="M0 31C-5 10-2-10 1-27M0-8l-19-13M1-13l19-15" stroke="#493936" strokeWidth="5" strokeLinecap="round"/><ellipse cy="-32" rx="21" ry="13" fill="#7c4b3e"/><ellipse cx="-17" cy="-24" rx="15" ry="11" fill="#a15d42"/><ellipse cx="17" cy="-25" rx="15" ry="11" fill="#cc7047"/></g>;
+  const b = biome(district);
+  if (kind === 0) return <g className="terrain-landmark" transform="translate(151 71)"><path d="M0 25C-3 8-2-10 2-28M0-2l-20-14M1-9l19-16" stroke="#65523d" strokeWidth="5" strokeLinecap="round"/><ellipse cy="-31" rx="25" ry="14" fill="#355944"/><ellipse cx="-18" cy="-23" rx="17" ry="12" fill="#45694e"/><ellipse cx="19" cy="-24" rx="18" ry="12" fill="#577557"/><ellipse cy="-40" rx="14" ry="9" fill="#7b936a" opacity=".62"/></g>;
+  if (kind === 1) return <g className="terrain-landmark" transform="translate(151 74)"><path d="M-11 22L-6-29 4-39 12 22Z" fill="#535047" stroke={b.edge} strokeWidth="1.8"/><path d="M-4-22L7-27M-7-3L9-9M-8 13L10 8" stroke={b.warm} strokeWidth="1.4" opacity=".65"/></g>;
+  if (kind === 2) return <g className="terrain-landmark"><ellipse cx="151" cy="83" rx="34" ry="17" fill={b.water} stroke={b.edge} strokeWidth="3"/><ellipse cx="151" cy="82" rx="22" ry="10" fill="#91b9ad" opacity=".35"/><path d="M124 86Q151 97 179 85" fill="none" stroke="#dce8d5" strokeWidth="1" opacity=".45"/></g>;
+  if (kind === 3) return <g className="terrain-landmark" fill="none" stroke="#a7ad90" strokeWidth="4.2"><path d="M127 94V63Q127 43 151 43Q175 43 175 63V94"/><path d="M137 94V65Q137 54 151 54Q165 54 165 65V94" strokeWidth="2.2"/><path d="M116 95H187" stroke="#59635a" strokeWidth="4"/></g>;
+  if (kind === 4) return <g className="terrain-landmark" transform="translate(151 76)"><path d="M-10 19L-5-25 2-39 9-15 14 19Z" fill="#293535" stroke="#839c92" strokeWidth="1.6"/><path d="M2-34V8" stroke={b.warm} strokeWidth="1.2" opacity=".55"/></g>;
+  if (kind === 5) return <g className="terrain-landmark" transform="translate(151 80)"><path d="M-22 15H22L14-7H-15Z" fill="#5c6553" stroke="#b5b88a" strokeWidth="1.7"/><path d="M-11-6V-20M11-6V-20M-15-20H15" stroke="#c5bd8b" strokeWidth="3"/><path d="M-27 17Q0 27 28 17" fill="none" stroke={b.water} strokeWidth="4"/></g>;
+  if (kind === 6) return <g className="terrain-landmark" transform="translate(151 78)"><path d="M-15 17L-7-28 0-40 7-18 15 18Z" fill="#71847d" stroke="#b8cbc2" strokeWidth="1.7"/><path d="M-3 12L0-35M6-15L11 14" stroke="#d5e4dd" strokeWidth="1.2" opacity=".5"/></g>;
+  if (kind === 7) return <g className="terrain-landmark" transform="translate(151 76)" fill="none" stroke="#bdb992" strokeWidth="4.5" strokeLinecap="round"><path d="M-25 20Q-23-15 0-15Q23-15 25 20"/><path d="M-14 20Q-12-5 0-5Q12-5 14 20" strokeWidth="2.2"/></g>;
+  if (kind === 8) return <g className="terrain-landmark" transform="translate(151 84)"><path d="M-28 10H28L19-13H-19Z" fill="#4f5d56" stroke="#98a78d" strokeWidth="1.7"/><path d="M-16-12V-29H16V-12M-4-29V-38H5V-29" fill="none" stroke="#afb594" strokeWidth="3"/><path d="M-33 13Q0 23 34 12" fill="none" stroke={b.water} strokeWidth="5" opacity=".7"/></g>;
+  return <g className="terrain-landmark" transform="translate(151 73)"><path d="M0 22C-4 7-2-9 1-23M0-7l-16-10M1-11l16-12" stroke="#52433b" strokeWidth="4.2" strokeLinecap="round"/><ellipse cy="-27" rx="18" ry="11" fill="#665445"/><ellipse cx="-14" cy="-21" rx="12" ry="9" fill="#7c654d"/><ellipse cx="14" cy="-21" rx="12" ry="9" fill="#936c4e"/><circle cx="0" cy="-31" r="3" fill={b.warm} opacity=".65"/></g>;
 }
 
 function Scenery({ district }: { district: number }) {
-  const kind = (district - 1) % BIOMES.length;
-  if (kind === 0) return <g>{Array.from({ length: 13 }, (_, i) => <Tree key={i} x={43 + noise(district * 13 + i) * 210} y={54 + noise(district * 23 + i) * 65} scale={.55 + noise(i + district) * .38}/>)}</g>;
-  if (kind === 1) return <g fill="none" stroke="#d59b68" strokeWidth="3" opacity=".6"><path d="M35 58Q86 44 116 51M43 73Q85 59 117 66M190 53Q231 45 262 61M194 70Q229 62 254 76"/><path d="M55 104Q148 79 241 105" stroke="#543c35" strokeWidth="5"/></g>;
-  if (kind === 2) return <g><path d="M33 78Q78 46 111 54Q91 83 112 109Q72 115 37 98Z" fill="#4f9ba0" opacity=".72"/><path d="M191 45Q236 54 266 82Q240 106 199 100Q216 74 191 45Z" fill="#67afb0" opacity=".62"/>{[60,226].map((x,i)=><g key={x} transform={`translate(${x} ${88+i*5})`}><path d="M0 11V-9" stroke="#6d513c" strokeWidth="2"/><path d="M0-9l-9-5M0-9l10-4M0-7l-11 1M0-7l12 2" stroke="#75966a" strokeWidth="3"/></g>)}</g>;
-  if (kind === 3) return <g fill="#929982" stroke="#5b665b" strokeWidth="1.5" opacity=".9"><path d="M48 86V49h31v37H67V62H58v24Z"/><path d="M214 93V43h12v50ZM234 91V58h11v33Z"/><path d="M70 112h37v8H70zM194 105h40v7h-40z"/></g>;
-  if (kind === 4) return <g fill="#334143" stroke="#697d78" strokeWidth="1.2"><path d="M43 95l17-43 18 43zM77 111l17-34 16 34zM215 95l18-51 20 51zM191 111l12-35 17 35z"/></g>;
-  if (kind === 5) return <g fill="none" strokeWidth="6"><path d="M29 63Q74 32 121 39" stroke="#dbd79a"/><path d="M34 75Q78 46 123 51" stroke="#5f8254"/><path d="M42 87Q82 61 124 64" stroke="#9cb96c"/><path d="M179 77Q228 57 270 67" stroke="#d9d69a"/><path d="M176 90Q226 72 264 81" stroke="#587851"/><path d="M175 103Q221 88 257 94" stroke="#9ab769"/></g>;
-  if (kind === 6) return <g stroke="#c5e6ea" strokeWidth="1">{[{x:54,y:91,h:35},{x:87,y:109,h:24},{x:218,y:91,h:43},{x:244,y:111,h:27},{x:193,y:55,h:23}].map((p,i)=><path key={i} d={`M${p.x-8} ${p.y}l4 -${p.h} 9 -8 8 ${p.h}-9 11Z`} fill={i%2 ? "#718ba8" : "#839eb8"}/>)}</g>;
-  if (kind === 7) return <g>{Array.from({ length: 12 }, (_, i) => { const x=38+noise(district*17+i)*225,y=76+noise(district*31+i)*45; return <g key={i} transform={`translate(${x} ${y})`}><path d="M0 8Q-4-1-1-12" stroke="#536c53" strokeWidth="1.4"/><path d="M-1-7q8-5 13-1q-7 5-13 4" fill="#9db47c" opacity=".75"/></g>; })}</g>;
-  if (kind === 8) return <g><path d="M35 82Q75 57 111 64Q97 91 114 110Q67 118 37 99Z" fill="#43878a" opacity=".7"/><path d="M191 65Q231 55 263 79Q247 106 199 105Q212 83 191 65Z" fill="#397a80" opacity=".75"/><path d="M55 104h48M205 111h43" stroke="#839b7d" strokeWidth="4"/></g>;
-  return <g><ellipse cx="150" cy="76" rx="55" ry="25" fill="#343c39" opacity=".7"/><ellipse cx="150" cy="76" rx="33" ry="13" fill="#1f2928" opacity=".7"/>{Array.from({ length: 13 }, (_, i) => <circle key={i} cx={36+noise(i*3+district)*229} cy={63+noise(i*7+district)*59} r={1.5+noise(i+9)*2.5} fill={i%3===0?"#d97650":"#a58a63"} opacity=".78"/>)}</g>;
+  const family = (district - 1) % BIOMES.length;
+  const b = biome(district);
+  if (family === 0) return <g>{Array.from({ length: 15 }, (_, i) => <Tree key={i} x={41 + noise(district * 13 + i) * 217} y={72 + noise(district * 23 + i) * 47} scale={.48 + noise(i + district) * .3}/>)}</g>;
+  if (family === 1) return <g><path d="M39 78Q83 65 118 70M45 90Q82 79 117 82M188 72Q225 64 260 78M194 85Q228 78 254 88" fill="none" stroke="#8e8064" strokeWidth="2.1" opacity=".48"/><path d="M62 105Q151 83 238 105" fill="none" stroke="#45443c" strokeWidth="4" opacity=".65"/></g>;
+  if (family === 2) return <g><path d="M32 97Q67 74 108 81Q96 102 111 116Q68 122 36 109Z" fill={b.water} opacity=".62"/><path d="M192 80Q230 72 267 94Q247 117 205 115Q214 95 192 80Z" fill={b.water} opacity=".5"/>{[48,76,226,248].map((x,i)=><Tree key={i} x={x} y={101+i%2*8} scale={.52}/>)}</g>;
+  if (family === 3) return <g stroke="#808877" fill="none" opacity=".62"><path d="M45 105V78H72V94M217 105V72H246V92M78 102H106V84H122" strokeWidth="3"/><path d="M39 111H125M196 111H260" strokeWidth="2"/></g>;
+  if (family === 4) return <g fill="#34413f" stroke="#677a72" strokeWidth="1"><path d="M43 107l14-33 16 33zM75 116l15-27 15 27zM218 105l16-39 18 39zM192 115l11-27 14 27z"/></g>;
+  if (family === 5) return <g fill="none" strokeWidth="4.2" opacity=".7"><path d="M29 79Q72 56 116 61" stroke="#b5b88d"/><path d="M34 90Q76 68 118 72" stroke="#5f7857"/><path d="M39 101Q78 80 119 83" stroke="#8fa36f"/><path d="M183 86Q226 69 268 77" stroke="#b4b88e"/><path d="M181 98Q224 82 262 89" stroke="#5a7354"/><path d="M180 109Q221 96 257 100" stroke="#8da06d"/></g>;
+  if (family === 6) return <g stroke="#aebfb8" strokeWidth="1">{[{x:54,y:103,h:27},{x:87,y:116,h:18},{x:218,y:102,h:31},{x:244,y:116,h:20},{x:196,y:78,h:18}].map((p,i)=><path key={i} d={`M${p.x-7} ${p.y}l4 -${p.h} 8 -6 7 ${p.h}-8 9Z`} fill={i%2 ? "#5f706c" : "#71827d"}/>)}</g>;
+  if (family === 7) return <g>{Array.from({ length: 13 }, (_, i) => { const x=39+noise(district*17+i)*222,y=92+noise(district*31+i)*30; return <g key={i} transform={`translate(${x} ${y})`}><path d="M0 7Q-3-1-1-10" stroke="#50634f" strokeWidth="1.2"/><path d="M-1-6q7-4 11-1q-6 4-11 3" fill="#879b73" opacity=".65"/></g>; })}</g>;
+  if (family === 8) return <g><path d="M35 95Q72 75 108 81Q96 102 112 116Q70 121 39 111Z" fill={b.water} opacity=".55"/><path d="M194 82Q229 75 262 94Q247 114 205 113Q214 96 194 82Z" fill={b.water} opacity=".58"/><path d="M56 113h45M207 117h39" stroke="#7c8f78" strokeWidth="3"/></g>;
+  return <g><ellipse cx="151" cy="94" rx="52" ry="19" fill="#303835" opacity=".55"/><ellipse cx="151" cy="94" rx="31" ry="10" fill="#202824" opacity=".62"/>{Array.from({ length: 12 }, (_, i) => <circle key={i} cx={42+noise(i*3+district)*218} cy={86+noise(i*7+district)*34} r={1+noise(i+9)*1.8} fill={i%3===0?b.warm:b.edge} opacity=".45"/>)}</g>;
+}
+
+function PathNetwork({ district, edge }: { district: number; edge: string }) {
+  const offset = (noise(district * 77) - .5) * 12;
+  return <g fill="none" strokeLinecap="round">
+    <path d={`M72 113Q103 ${98 + offset} 128 104Q155 111 183 99Q207 91 230 108`} stroke="#d0d5b2" strokeWidth="4.4" opacity=".13"/>
+    <path d={`M78 113Q105 ${99 + offset} 129 105Q155 112 183 100Q207 92 225 108`} stroke={edge} strokeWidth="1.15" opacity=".46"/>
+    <path d="M151 101Q149 118 151 129" stroke={edge} strokeWidth="1" opacity=".34"/>
+  </g>;
 }
 
 export const IslandTerrain = memo(function IslandTerrain({ district }: { district: number }) {
   const b = biome(district);
-  const terrainId = useId();
-  const groundId = useId();
-  const waterId = useId();
+  const clipId = useId();
+  const topId = useId();
+  const rockId = useId();
+  const glowId = useId();
   const rim = islandOutlinePoints(district);
   const points = rim.map(p => `${p.x},${p.y}`).join(" ");
-  const lower = rim.filter((_, i) => i > 0 && i < 14);
+  const underPoints = rim.map((p, i) => `${p.x + (i < 16 ? -2 : 2)},${p.y + 33 + noise(district * 101 + i) * 14}`).join(" ");
 
   return <svg className={`island-terrain drawn-terrain terrain-${b.shape}`} viewBox="0 0 300 200" role="img" aria-label={`${b.name} island. Landmark: ${b.landmark}.`}>
     <defs>
-      <clipPath id={terrainId}><polygon points={points}/></clipPath>
-      <linearGradient id={groundId} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={b.edge}/><stop offset=".22" stopColor={b.ground}/><stop offset="1" stopColor={b.ground2}/></linearGradient>
-      <radialGradient id={waterId}><stop offset="0" stopColor={b.water} stopOpacity=".7"/><stop offset="1" stopColor={b.water} stopOpacity="0"/></radialGradient>
+      <clipPath id={clipId}><polygon points={points}/></clipPath>
+      <linearGradient id={topId} x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stopColor={b.edge}/><stop offset=".24" stopColor={b.ground}/><stop offset="1" stopColor={b.ground2}/></linearGradient>
+      <linearGradient id={rockId} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={b.rock}/><stop offset="1" stopColor={b.shadow}/></linearGradient>
+      <radialGradient id={glowId}><stop offset="0" stopColor={b.warm} stopOpacity=".23"/><stop offset=".62" stopColor={b.water} stopOpacity=".08"/><stop offset="1" stopColor={b.water} stopOpacity="0"/></radialGradient>
     </defs>
-    <ellipse className="terrain-shadow" cx="150" cy="166" rx="107" ry="17" fill="#000" opacity=".28"/>
-    <ellipse className="terrain-water-glow" cx="150" cy="142" rx="136" ry="44" fill={`url(#${waterId})`} opacity=".28"/>
-    {lower.map((p, i) => {
-      const q = lower[Math.min(i + 1, lower.length - 1)];
-      if (p === q) return null;
-      const depth = 35 + noise(district * 19 + i) * 32;
-      return <polygon key={i} points={`${p.x},${p.y} ${q.x},${q.y} ${q.x - 8},${q.y + depth} ${p.x + 7},${p.y + depth - 8}`} fill={i % 2 ? b.rock : b.shadow} stroke={b.shadow} strokeWidth="1"/>;
+
+    <ellipse className="terrain-shadow" cx="151" cy="166" rx="108" ry="15" fill="#000" opacity=".32"/>
+    <ellipse className="terrain-water-glow" cx="151" cy="142" rx="137" ry="43" fill={`url(#${glowId})`} opacity=".72"/>
+
+    <polygon points={underPoints} fill={`url(#${rockId})`} stroke={b.shadow} strokeWidth="1.2"/>
+    {Array.from({ length: 13 }, (_, i) => {
+      const x = 45 + i * 17 + (noise(district * 19 + i) - .5) * 6;
+      const y = 125 + noise(district * 31 + i) * 19;
+      return <path key={i} d={`M${x} ${y}l${(noise(i+3)-.5)*8} ${22+noise(i+8)*18}`} stroke={i % 2 ? b.shadow : b.rock} strokeWidth="1.2" opacity=".52"/>;
     })}
-    <polygon points={points} fill={`url(#${groundId})`} stroke={b.edge} strokeWidth="2.3"/>
-    <g clipPath={`url(#${terrainId})`}>
-      <path d="M18 106Q76 77 126 88T282 79" fill="none" stroke={b.edge} strokeWidth="1.2" opacity=".22"/>
-      <path d="M22 121Q87 91 148 104T279 96" fill="none" stroke={b.shadow} strokeWidth="1" opacity=".3"/>
+
+    <polygon points={points} fill={`url(#${topId})`} stroke={b.edge} strokeWidth="2.2"/>
+    <g clipPath={`url(#${clipId})`}>
+      <ellipse cx="151" cy="84" rx="118" ry="42" fill="#d8dfc0" opacity=".035"/>
+      <path d="M20 111Q78 89 127 96T281 91" fill="none" stroke="#e3e7cd" strokeWidth="1" opacity=".11"/>
+      <path d="M20 121Q87 99 149 108T279 102" fill="none" stroke={b.shadow} strokeWidth="1" opacity=".24"/>
       <Scenery district={district}/>
+      <PathNetwork district={district} edge={b.edge}/>
       <Landmark district={district}/>
-      {Array.from({ length: 24 }, (_, i) => <circle key={i} cx={28 + noise(district * 71 + i) * 244} cy={45 + noise(district * 83 + i) * 84} r={.7 + noise(i * 5 + district) * 1.8} fill={i % 4 === 0 ? b.accent : b.edge} opacity={.16 + noise(i + district) * .22}/>) }
+      {Array.from({ length: 18 }, (_, i) => <circle key={i} cx={33 + noise(district * 71 + i) * 234} cy={70 + noise(district * 83 + i) * 55} r={.6 + noise(i * 5 + district) * 1.3} fill={i % 5 === 0 ? b.warm : b.edge} opacity={.1 + noise(i + district) * .16}/>) }
     </g>
-    <polygon points={points} fill="none" stroke={b.accent} strokeWidth=".8" opacity=".22" transform="translate(12 7) scale(.92)"/>
+
+    <HabitatCanopy district={district} glass={b.glass} warm={b.warm}/>
+
+    <path d="M55 116Q151 145 247 116" fill="none" stroke="#d8e0c8" strokeWidth=".65" opacity=".12"/>
+    <path d="M77 129Q151 149 225 129" fill="none" stroke={b.warm} strokeWidth=".55" opacity=".12"/>
+    <polygon points={points} fill="none" stroke="#eef2de" strokeWidth=".55" opacity=".13" transform="translate(10 6) scale(.935)"/>
   </svg>;
 });
