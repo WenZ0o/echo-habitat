@@ -7,6 +7,7 @@ type Aux = { x: number; y: number; scale: number; rotate?: number };
 type CityPlan = {
   label: string;
   family: string;
+  mark: string;
   aux: Aux[];
 };
 type AssetRecipe = {
@@ -27,16 +28,16 @@ type AssetRecipe = {
 };
 
 const CITY_PLANS: CityPlan[] = [
-  { label: "Mossward", family: "grove", aux: [{x:35,y:58,scale:.42},{x:66,y:59,scale:.34},{x:57,y:44,scale:.28},{x:72,y:49,scale:.23}] },
-  { label: "Helios Reach", family: "solar", aux: [{x:40,y:48,scale:.40},{x:62,y:58,scale:.36},{x:70,y:43,scale:.30},{x:52,y:64,scale:.23}] },
-  { label: "Tidelock", family: "water", aux: [{x:39,y:61,scale:.42},{x:63,y:49,scale:.34},{x:55,y:39,scale:.27},{x:72,y:59,scale:.22}] },
-  { label: "Reliquary", family: "archive", aux: [{x:42,y:47,scale:.43},{x:64,y:54,scale:.34},{x:54,y:63,scale:.28},{x:35,y:60,scale:.23}] },
-  { label: "Cinderworks", family: "forge", aux: [{x:37,y:57,scale:.44},{x:63,y:45,scale:.34},{x:55,y:65,scale:.27},{x:71,y:58,scale:.22}] },
-  { label: "Terravale", family: "terrace", aux: [{x:40,y:50,scale:.39},{x:61,y:57,scale:.33},{x:69,y:45,scale:.26},{x:35,y:63,scale:.22}] },
-  { label: "Lumen Ridge", family: "glass", aux: [{x:39,y:55,scale:.42},{x:65,y:51,scale:.35},{x:55,y:40,scale:.27},{x:71,y:62,scale:.22}] },
-  { label: "Galehaven", family: "wind", aux: [{x:37,y:49,scale:.40},{x:64,y:58,scale:.34},{x:58,y:40,scale:.28},{x:72,y:48,scale:.22}] },
-  { label: "Drowned Sanctum", family: "sanctuary", aux: [{x:41,y:59,scale:.42},{x:63,y:49,scale:.35},{x:55,y:42,scale:.28},{x:35,y:52,scale:.22}] },
-  { label: "Ember Bloom", family: "ember", aux: [{x:38,y:55,scale:.44},{x:64,y:48,scale:.34},{x:56,y:64,scale:.28},{x:72,y:57,scale:.22}] },
+  { label: "Mossward", family: "grove", mark: "✦", aux: [{x:35,y:58,scale:.42},{x:66,y:59,scale:.34},{x:57,y:44,scale:.28},{x:72,y:49,scale:.23}] },
+  { label: "Helios Reach", family: "solar", mark: "☼", aux: [{x:40,y:48,scale:.40},{x:62,y:58,scale:.36},{x:70,y:43,scale:.30},{x:52,y:64,scale:.23}] },
+  { label: "Tidelock", family: "water", mark: "≈", aux: [{x:39,y:61,scale:.42},{x:63,y:49,scale:.34},{x:55,y:39,scale:.27},{x:72,y:59,scale:.22}] },
+  { label: "Reliquary", family: "archive", mark: "◇", aux: [{x:42,y:47,scale:.43},{x:64,y:54,scale:.34},{x:54,y:63,scale:.28},{x:35,y:60,scale:.23}] },
+  { label: "Cinderworks", family: "forge", mark: "△", aux: [{x:37,y:57,scale:.44},{x:63,y:45,scale:.34},{x:55,y:65,scale:.27},{x:71,y:58,scale:.22}] },
+  { label: "Terravale", family: "terrace", mark: "≋", aux: [{x:40,y:50,scale:.39},{x:61,y:57,scale:.33},{x:69,y:45,scale:.26},{x:35,y:63,scale:.22}] },
+  { label: "Lumen Ridge", family: "glass", mark: "✧", aux: [{x:39,y:55,scale:.42},{x:65,y:51,scale:.35},{x:55,y:40,scale:.27},{x:71,y:62,scale:.22}] },
+  { label: "Galehaven", family: "wind", mark: "⌁", aux: [{x:37,y:49,scale:.40},{x:64,y:58,scale:.34},{x:58,y:40,scale:.28},{x:72,y:48,scale:.22}] },
+  { label: "Drowned Sanctum", family: "sanctuary", mark: "◌", aux: [{x:41,y:59,scale:.42},{x:63,y:49,scale:.35},{x:55,y:42,scale:.28},{x:35,y:52,scale:.22}] },
+  { label: "Ember Bloom", family: "ember", mark: "✺", aux: [{x:38,y:55,scale:.44},{x:64,y:48,scale:.34},{x:56,y:64,scale:.28},{x:72,y:57,scale:.22}] },
 ];
 
 const SPRITE_TRIPLES: [number, number, number][] = [];
@@ -89,9 +90,11 @@ export function assetRecipe(assetIndex: number): AssetRecipe {
 export function districtCityPlan(district: number): CityPlan {
   if (district <= CITY_PLANS.length) return CITY_PLANS[Math.max(1, district) - 1];
   const n = Math.max(11, district);
+  const marks = ["✦", "◇", "⌁", "△", "◌", "✧", "≋", "⊙"];
   return {
     label: `Frontier ${String(n).padStart(2, "0")}`,
     family: `frontier-${n}`,
+    mark: marks[n % marks.length],
     aux: [0, 1, 2, 3].map(index => ({
       x: 34 + hash(n * 10 + index, 37) * 40,
       y: 41 + hash(n * 10 + index, 41) * 25,
@@ -159,8 +162,6 @@ export function DistrictRasterIsland({ district, completed = 0, power = 100, com
   </span>;
 }
 
-// Exact rendered recipes are globally unique: every visible main/aux structure receives
-// its own monotonically increasing asset index and therefore its own composite recipe.
 if (process.env.NODE_ENV !== "production") {
   const sample = Array.from({ length: 120 }, (_, index) => assetRecipe(index));
   const signatures = sample.map(item => `${item.primary}-${item.annex}-${item.crown}`);
