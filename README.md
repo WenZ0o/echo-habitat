@@ -34,17 +34,19 @@ Origin is the first home and the visual and geographic heart of ECHO HABITAT.
 
 Every completed bridge reveals another district in the same world. The outer districts use the same high-resolution environment and structure artwork as Origin instead of a separate vector illustration style. Moss-covered rock, natural paths, glass-and-metal habitat architecture and warm inhabited lighting remain consistent across the whole world.
 
-The atlas no longer follows rows or geometric rings. Districts receive stable deterministic scatter positions around Origin with collision avoidance, varied distance and uneven angles. The layout looks organic and irregular while remaining identical after every reload. Routes connect each new settlement to a nearby earlier district, creating a branching archipelago rather than a diagram.
+The atlas does not use rows, columns or perfect rings. Districts receive stable deterministic scatter positions around Origin with collision avoidance, varied distance, unequal angles and irregular branching. The layout looks random and organic while remaining identical after every reload. Routes connect each settlement to a nearby earlier district instead of tracing a geometric orbit.
 
 The atlas can be dragged, zoomed and explored. Select a district to focus it, inspect its settlement progress and enter its live view.
 
-Districts remain distinct through authored city identities and globally unique visible structure recipes. Each visible structure receives its own world asset ID and its own composite of high-resolution building parts, scale, orientation and silhouette. No complete rendered structure recipe is reused by another island.
+Districts remain distinct through authored city identities and globally unique visible structure recipes. Every main building and support structure receives its own world asset ID and a different composite recipe made from high-resolution structure parts, scale, orientation and silhouette. Complete rendered building recipes are not reused by another island.
+
+The first ten districts have authored identities; later frontier districts receive district-numbered architecture and structure names rather than cycling back to an earlier city.
 
 Each district has its own:
 
-- settlement identity and locally named structures
-- unique visible building compositions
-- supporting structures with separate global asset identities
+- settlement identity and locally unique structure names
+- globally unique visible building compositions
+- supporting structures with separate world asset identities
 - building scale, rotation, hierarchy and density
 - landmark and compact atlas identity
 - environmental and narrative character
@@ -114,7 +116,7 @@ Configure these environment variables locally or in Vercel:
 
 ## Project status
 
-Version 0.8 — Organic world scatter and globally unique structure pass.
+Version 0.8 — Organic scatter and globally unique architecture pass.
 
 Moving residents · Council decisions · Construction phases  
 Photoreal district art · Organic Origin-centered atlas · Globally unique rendered structures · Persistent memories · Protected owner controls
