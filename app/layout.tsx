@@ -3,8 +3,7 @@ import "./globals.css";
 import "./world.css";
 import "./living-archipelago.css";
 import "./district-architecture.css";
-import "./living-world.css";
-import "./living-world-extras.css";
+import "./photoreal-districts.css";
 
 export const metadata: Metadata = {
   title: "ECHO HABITAT — A small world, unfolding",
