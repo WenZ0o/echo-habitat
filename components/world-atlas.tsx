@@ -4,69 +4,69 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerE
 import { BLUEPRINTS, districtOf, workRequired } from "@/lib/habitat/construction";
 import { PROFILES, RESIDENT_IDS } from "@/lib/habitat/residents";
 import type { ResidentId, World } from "@/lib/habitat/types";
-import { biome, buildingPosition, noise, residentPosition } from "./island-terrain";
+import { biome, buildingPosition, residentPosition } from "./island-terrain";
 import { districtArchitecture, districtStructure } from "./district-architecture";
 import { DistrictRasterIsland, DistrictRasterStructure, districtCityPlan } from "./district-raster";
 
 type Camera = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
-type RingMeta = { ring: number; slot: number; count: number };
 
-function ringCapacity(ring: number) {
-  return ring <= 0 ? 1 : 6 + (ring - 1) * 4;
+type WorldNode = Point & { district: number };
+
+function seeded(index: number, salt: number, attempt = 0) {
+  const x = Math.sin((index + 1) * 91.731 + salt * 47.117 + attempt * 13.913) * 43758.5453123;
+  return x - Math.floor(x);
 }
 
-function ringMeta(index: number): RingMeta {
-  if (index <= 0) return { ring: 0, slot: 0, count: 1 };
-  let remaining = index;
-  let ring = 1;
-  while (remaining > ringCapacity(ring)) {
-    remaining -= ringCapacity(ring);
-    ring += 1;
+function buildScatter(count: number): Point[] {
+  const positions: Point[] = [{ x: 0, y: 0 }];
+  for (let index = 1; index < count; index += 1) {
+    const innerReach = 315 + Math.log2(index + 1) * 38;
+    const outerReach = 525 + Math.sqrt(index) * 205;
+    const minDistance = 285 + seeded(index, 71) * 75;
+    let best: Point = { x: outerReach, y: 0 };
+    let bestClearance = -1;
+
+    for (let attempt = 0; attempt < 140; attempt += 1) {
+      const angle = seeded(index, 11, attempt) * Math.PI * 2;
+      const radial = innerReach + Math.pow(seeded(index, 23, attempt), .72) * (outerReach - innerReach);
+      const stretchX = .84 + seeded(index, 31, attempt) * .38;
+      const stretchY = .72 + seeded(index, 43, attempt) * .46;
+      const candidate = {
+        x: Math.cos(angle) * radial * stretchX,
+        y: Math.sin(angle) * radial * stretchY,
+      };
+      const clearance = positions.reduce((nearest, point) => Math.min(nearest, Math.hypot(candidate.x - point.x, candidate.y - point.y)), Number.POSITIVE_INFINITY);
+      if (clearance > bestClearance) {
+        best = candidate;
+        bestClearance = clearance;
+      }
+      if (clearance >= minDistance) break;
+    }
+    positions.push(best);
   }
-  return { ring, slot: remaining - 1, count: ringCapacity(ring) };
-}
-
-function ringRadii(ring: number) {
-  return {
-    x: 380 + Math.max(0, ring - 1) * 340,
-    y: 250 + Math.max(0, ring - 1) * 230,
-  };
-}
-
-function ringStart(ring: number) {
-  let start = 1;
-  for (let current = 1; current < ring; current += 1) start += ringCapacity(current);
-  return start;
+  return positions;
 }
 
 export function islandLocation(index: number) {
-  if (index === 0) return { x: 0, y: 0 };
-  const meta = ringMeta(index);
-  const radii = ringRadii(meta.ring);
-  const step = Math.PI * 2 / meta.count;
-  const stagger = meta.ring % 2 === 0 ? step / 2 : 0;
-  const angle = -Math.PI / 2 + meta.slot * step + stagger + (noise(index * 29) - .5) * .1;
-  const radiusX = radii.x + (noise(index * 17) - .5) * 42;
-  const radiusY = radii.y + (noise(index * 41) - .5) * 30;
-  return { x: Math.cos(angle) * radiusX, y: Math.sin(angle) * radiusY };
+  return buildScatter(Math.max(1, index + 1))[Math.max(0, index)] ?? { x: 0, y: 0 };
 }
 
-function districtParent(index: number) {
-  const meta = ringMeta(index);
-  if (meta.ring <= 1) return 0;
-  const current = islandLocation(index);
-  const innerRing = meta.ring - 1;
-  const start = ringStart(innerRing);
-  const count = ringCapacity(innerRing);
-  let best = start;
-  let distance = Number.POSITIVE_INFINITY;
-  for (let offset = 0; offset < count; offset += 1) {
-    const candidate = start + offset;
-    const point = islandLocation(candidate);
-    const next = Math.hypot(point.x - current.x, point.y - current.y);
-    if (next < distance) {
-      distance = next;
+function districtParent(index: number, nodes: WorldNode[]) {
+  if (index <= 0) return 0;
+  const current = nodes[index];
+  const currentRadius = Math.hypot(current.x, current.y);
+  let best = 0;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let candidate = 0; candidate < index; candidate += 1) {
+    const point = nodes[candidate];
+    const radius = Math.hypot(point.x, point.y);
+    const distance = Math.hypot(point.x - current.x, point.y - current.y);
+    const outwardPenalty = radius > currentRadius * 1.03 ? 240 : 0;
+    const originPenalty = candidate === 0 && index > 4 ? 90 : 0;
+    const score = distance + outwardPenalty + originPenalty;
+    if (score < bestScore) {
+      bestScore = score;
       best = candidate;
     }
   }
@@ -96,20 +96,19 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
   const start = useRef<{ x: number; y: number; district: number | null; resident: ResidentId | null } | null>(null);
   const moved = useRef(false);
 
-  const nodes = useMemo(() => Array.from({ length: latest + 1 }, (_, district) => ({ district, ...islandLocation(district) })), [latest]);
+  const nodes = useMemo<WorldNode[]>(() => {
+    const points = buildScatter(latest + 1);
+    return points.map((point, district) => ({ district, ...point }));
+  }, [latest]);
   const extent = useMemo(() => {
     const raw = nodes.reduce((box, node) => ({
-      minX: Math.min(box.minX, node.x),
-      minY: Math.min(box.minY, node.y),
-      maxX: Math.max(box.maxX, node.x + 300),
-      maxY: Math.max(box.maxY, node.y + 210),
+      minX: Math.min(box.minX, node.x), minY: Math.min(box.minY, node.y),
+      maxX: Math.max(box.maxX, node.x + 300), maxY: Math.max(box.maxY, node.y + 210),
     }), { minX: 0, minY: 0, maxX: 300, maxY: 210 });
-    const padding = 120;
+    const padding = 150;
     return {
-      minX: raw.minX - padding,
-      minY: raw.minY - padding,
-      maxX: raw.maxX + padding,
-      maxY: raw.maxY + padding,
+      minX: raw.minX - padding, minY: raw.minY - padding,
+      maxX: raw.maxX + padding, maxY: raw.maxY + padding,
       width: raw.maxX - raw.minX + padding * 2,
       height: raw.maxY - raw.minY + padding * 2,
     };
@@ -117,7 +116,6 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
   const minimum = Math.max(.035, Math.min(.34, (size.width - 44) / extent.width, (size.height - 44) / extent.height));
   const minRef = useRef(minimum);
   minRef.current = minimum;
-  const maxRing = ringMeta(latest).ring;
 
   const selectedBiome = chosen > 0 ? biome(chosen) : null;
   const selectedArchitecture = chosen > 0 ? districtArchitecture(chosen) : null;
@@ -134,7 +132,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
   const detailLevel = camera.zoom < .19 ? "far" : camera.zoom < .42 ? "medium" : "near";
 
   function focus(district: number) {
-    const point = islandLocation(district);
+    const point = nodes[district] ?? { x: 0, y: 0 };
     const zoom = district === 0 ? Math.min(.88, Math.max(.62, (size.width - 36) / 1080)) : Math.min(1.18, Math.max(.72, (size.width - 36) / 430));
     setCamera({ x: size.width / 2 - (point.x + 150) * zoom, y: size.height / 2 - (point.y + 100) * zoom, zoom });
   }
@@ -161,15 +159,11 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
       setCamera(current => zoomAt(current, Math.exp(-Math.max(-100, Math.min(100, event.deltaY)) * .002), event.clientX - bounds.left, event.clientY - bounds.top, minRef.current));
     };
     element.addEventListener("wheel", wheel, { passive: false });
-    return () => {
-      observer.disconnect();
-      element.removeEventListener("wheel", wheel);
-    };
+    return () => { observer.disconnect(); element.removeEventListener("wheel", wheel); };
   }, []);
 
   useEffect(() => {
-    if (following) return;
-    if (chosen !== 0) return;
+    if (following || chosen !== 0) return;
     const zoom = Math.min(.78, Math.max(.5, (size.width - 36) / 1040));
     setCamera({ x: size.width / 2 - 150 * zoom, y: size.height / 2 - 100 * zoom, zoom });
   }, [chosen, following, size.width, size.height]);
@@ -177,10 +171,10 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
   useEffect(() => {
     if (!following) return;
     setChosen(latest);
-    const point = islandLocation(latest);
+    const point = nodes[latest] ?? { x: 0, y: 0 };
     const zoom = Math.min(1.06, Math.max(.7, (size.width - 36) / 430));
     setCamera({ x: size.width / 2 - (point.x + 150) * zoom, y: size.height / 2 - (point.y + 100) * zoom, zoom });
-  }, [following, latest, size.width, size.height]);
+  }, [following, latest, nodes, size.width, size.height]);
 
   function measure() {
     const values = [...pointers.current.values()];
@@ -201,9 +195,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
       const resident = element.closest<HTMLElement>("[data-resident]")?.dataset.resident as ResidentId | undefined;
       start.current = { x: event.clientX, y: event.clientY, district: district === undefined ? null : Number(district), resident: resident ?? null };
     } else moved.current = true;
-    gesture.current = measure();
-    setDragging(true);
-    setFollowing(false);
+    gesture.current = measure(); setDragging(true); setFollowing(false);
   }
 
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -223,11 +215,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
     gesture.current = next;
   }
 
-  function pick(district: number) {
-    setChosen(district);
-    setFollowing(false);
-    focus(district);
-  }
+  function pick(district: number) { setChosen(district); setFollowing(false); focus(district); }
 
   function end(event: PointerEvent<HTMLDivElement>, cancel = false) {
     if (!pointers.current.has(event.pointerId)) return;
@@ -253,8 +241,8 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
     <div className="atlas-heading">
       <div className="atlas-title-block">
         <span className="eyebrow">THE LIVING ARCHIPELAGO</span>
-        <h3>Origin at the heart of a world growing outward.</h3>
-        <p>{latest} {latest === 1 ? "district" : "districts"} around Origin · new cities form in expanding world rings</p>
+        <h3>Origin inside a world that grows without a grid.</h3>
+        <p>{latest} {latest === 1 ? "district" : "districts"} around Origin · every island keeps a stable, organic position</p>
       </div>
       <div className="atlas-tools" aria-label="Atlas controls">
         <button onClick={() => { setFollowing(false); setCamera(current => zoomAt(current, 1 / 1.25, size.width / 2, size.height / 2, minimum)); }} aria-label="Zoom out">−</button>
@@ -271,17 +259,8 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
       onKeyDown={event => {
         if (event.target !== event.currentTarget) return;
         const delta: Record<string, [number, number]> = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
-        if (delta[event.key]) {
-          event.preventDefault();
-          setFollowing(false);
-          const [x, y] = delta[event.key];
-          setCamera(current => ({ ...current, x: current.x + x, y: current.y + y }));
-        }
-        if (event.key === "+" || event.key === "=" || event.key === "-") {
-          event.preventDefault();
-          setFollowing(false);
-          setCamera(current => zoomAt(current, event.key === "-" ? .8 : 1.25, size.width / 2, size.height / 2, minimum));
-        }
+        if (delta[event.key]) { event.preventDefault(); setFollowing(false); const [x, y] = delta[event.key]; setCamera(current => ({ ...current, x: current.x + x, y: current.y + y })); }
+        if (event.key === "+" || event.key === "=" || event.key === "-") { event.preventDefault(); setFollowing(false); setCamera(current => zoomAt(current, event.key === "-" ? .8 : 1.25, size.width / 2, size.height / 2, minimum)); }
       }}>
       <div className="atlas-ocean-depth" aria-hidden="true"/>
       <div className="atlas-haze atlas-haze-one" aria-hidden="true"/>
@@ -289,26 +268,18 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
 
       <div className={`atlas-space${chosen !== null ? " has-selection" : ""}`} style={{ transform: `translate(${camera.x}px,${camera.y}px) scale(${camera.zoom})` }}>
         <svg className="atlas-connections" width={extent.width} height={extent.height} viewBox={`${extent.minX} ${extent.minY} ${extent.width} ${extent.height}`} style={{ left: extent.minX, top: extent.minY }} aria-hidden="true">
-          {Array.from({ length: maxRing }, (_, index) => index + 1).map(ring => {
-            const radii = ringRadii(ring);
-            return <ellipse key={`ring-${ring}`} className="atlas-orbit-ring" cx="150" cy="96" rx={radii.x} ry={radii.y}/>;
-          })}
           {nodes.slice(1).map(node => {
-            const parentDistrict = districtParent(node.district);
-            const parent = nodes.find(item => item.district === parentDistrict) ?? nodes[0];
+            const parentDistrict = districtParent(node.district, nodes);
+            const parent = nodes[parentDistrict] ?? nodes[0];
             const startX = parent.x + 150, startY = parent.y + 96;
             const endX = node.x + 150, endY = node.y + 96;
             const dx = endX - startX, dy = endY - startY;
             const length = Math.max(1, Math.hypot(dx, dy));
-            const bend = (node.district % 2 ? 1 : -1) * Math.min(70, length * .11);
+            const bend = (seeded(node.district, 89) > .5 ? 1 : -1) * Math.min(78, length * (.08 + seeded(node.district, 97) * .08));
             const controlX = (startX + endX) / 2 - dy / length * bend;
             const controlY = (startY + endY) / 2 + dx / length * bend;
             const path = `M${startX} ${startY} Q${controlX} ${controlY} ${endX} ${endY}`;
-            return <g key={node.district}>
-              <path className="atlas-route-shadow" d={path}/>
-              <path className={`atlas-route${parentDistrict === 0 ? " is-primary" : ""}`} d={path}/>
-              <circle className="atlas-route-node" cx={endX} cy={endY} r="2.5"/>
-            </g>;
+            return <g key={node.district}><path className="atlas-route-shadow" d={path}/><path className={`atlas-route${parentDistrict === 0 ? " is-primary" : ""}`} d={path}/><circle className="atlas-route-node" cx={endX} cy={endY} r="2.5"/></g>;
           })}
         </svg>
 
@@ -322,8 +293,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
             aria-label={node.district === 0 ? "Origin, the first home" : `District ${node.district}, ${islandBiome?.name}. ${islandArchitecture?.title}. Landmark: ${islandBiome?.landmark}.`}
             onClick={event => { if (event.detail === 0) pick(node.district); }}>
             <span className="atlas-island-halo" aria-hidden="true"/>
-            {node.district === 0
-              ? <><span className="atlas-origin-core" aria-hidden="true"/><img className="atlas-home-art" src="/habitat.png" alt="" draggable={false}/></>
+            {node.district === 0 ? <><span className="atlas-origin-core" aria-hidden="true"/><img className="atlas-home-art" src="/habitat.png" alt="" draggable={false}/></>
               : <DistrictRasterIsland district={node.district} completed={complete} power={world.power} compact={detailLevel !== "near"}/>} 
 
             {node.district > 0 && detailLevel !== "far" && BLUEPRINTS.map(blueprint => {
@@ -347,7 +317,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
         })}
 
         {detailLevel === "near" && world.residents.filter(resident => visibleDistricts.has(resident.district)).map(resident => {
-          const island = islandLocation(resident.district), local = residentPosition(resident.position, resident.district);
+          const island = nodes[resident.district] ?? { x: 0, y: 0 }, local = residentPosition(resident.position, resident.district);
           return <button key={resident.id} data-resident={resident.id} className={`atlas-resident${selected === resident.id ? " is-selected" : ""}`} aria-label={`Observe ${PROFILES[resident.id].name}: ${resident.activity}`}
             onClick={event => { if (event.detail === 0) onSelect(resident.id); }}
             style={{ left: island.x + local.x * 3, top: island.y + local.y * 2, "--robot-x": `${RESIDENT_IDS.indexOf(resident.id) * 50}%`, "--resident": PROFILES[resident.id].color } as CSSProperties}>
@@ -359,14 +329,12 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
       <span className="atlas-compass" aria-hidden="true"><i>N</i><b>↑</b></span>
       <div className="atlas-focus-card" onPointerDown={event => event.stopPropagation()}>
         {chosen === 0 ? <>
-          <span className="atlas-card-eyebrow">ORIGIN / WORLD CENTER</span>
-          <h4>The First Home</h4>
-          <p>The grove, reflection pool and observatory at the center of every journey outward.</p>
-          <div className="atlas-card-meta"><span><b>3</b> residents</span><span><b>{maxRing}</b> world rings</span></div>
+          <span className="atlas-card-eyebrow">ORIGIN / WORLD CENTER</span><h4>The First Home</h4>
+          <p>The grove, reflection pool and observatory remain the visual and geographic heart of the world.</p>
+          <div className="atlas-card-meta"><span><b>3</b> residents</span><span><b>{latest}</b> outer districts</span></div>
         </> : <>
           <div className="atlas-card-top"><span className="atlas-card-eyebrow">DISTRICT {String(chosen).padStart(2, "0")}</span>{chosen === latest && <span className="atlas-frontier-badge">FRONTIER</span>}</div>
-          <h4>{selectedArchitecture?.title}</h4>
-          <p>{selectedBiome?.mood}</p>
+          <h4>{selectedArchitecture?.title}</h4><p>{selectedBiome?.mood}</p>
           <div className="atlas-landmark"><span>LANDMARK</span><strong>{selectedBiome?.landmark}</strong></div>
           <div className="atlas-settlement-identity"><span>CITY FORM</span><strong>{selectedCityPlan?.label}</strong><small>{selectedArchitecture?.style}</small></div>
           {selectedProjectIdentity && <div className="atlas-current-build"><span>TAKING SHAPE</span><strong>{selectedProjectIdentity.name}</strong></div>}
@@ -380,7 +348,7 @@ export function WorldAtlas({ world, selected, onSelect, onDistrict }: {
 
     <div className="atlas-footer">
       <span><i className="atlas-live-dot"/>World state live</span>
-      <span>{detailLevel === "far" ? "World rings" : detailLevel === "medium" ? "City view" : "Life view"}</span>
+      <span>{detailLevel === "far" ? "Organic world view" : detailLevel === "medium" ? "City view" : "Life view"}</span>
       <span className="atlas-scroll-note">Drag the atlas · scroll outside it to move the page</span>
     </div>
   </section>;
