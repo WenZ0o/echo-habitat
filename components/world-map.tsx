@@ -35,10 +35,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
     setDetail(null);
   }
 
-  function follow() {
-    setBrowsing(null);
-    setDetail(null);
-  }
+  function follow() { setBrowsing(null); setDetail(null); }
 
   return <div className="world-map">
     <div className="map-navigation">
@@ -89,7 +86,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
             {active && <span className="construction-label"><Hammer size={10}/>{progress}%</span>}
           </button>;
         })}
-        <span className="island-name district-name">District {String(district).padStart(2, "0")} · {architecture.title.replace("The ", "")}</span>
+        <span className="island-name district-name">District {String(district).padStart(2, "0")} · {cityPlan.label}</span>
       </div>
 
       {world.residents.filter(resident => resident.district === 0 || resident.district === district).map(resident => {
@@ -105,11 +102,11 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
       })}
 
       <div className="weather-badge">{world.weather === "rain" ? <CloudRain size={15}/> : <Sun size={15}/>}<span>{world.weather === "rain" ? "Gentle rain" : "Clear skies"}</span></div>
-      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>{cityPlan.label}. The city grows on the same physical world art as Origin instead of a separate sketch layer.</span></>}</div>
+      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>{cityPlan.label}. Every visible structure here has its own world recipe and is not reused as the same building on another island.</span></>}</div>
     </div>
 
     <details className="district-buildings district-buildings-premium">
-      <summary>Structures unique to {biome(district).shortName} · {districtBuilt}/6 complete</summary>
+      <summary>Structures unique to {cityPlan.label} · {districtBuilt}/6 complete</summary>
       <div className="district-building-list" aria-label={`Structures in district ${district}`}>
         {BLUEPRINTS.map(blueprint => {
           const identity = districtStructure(blueprint.id, district);
