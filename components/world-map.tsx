@@ -10,8 +10,9 @@ import { WorldAtlas } from "./world-atlas";
 import type { BlueprintId, ResidentId, World } from "@/lib/habitat/types";
 
 const RESOURCE_ICON = { biomass: Sprout, salvage: Wrench, insight: Sparkles };
-const HOME = { left: -12, top: 2, width: 82 };
-const DISTRICT = { left: 37, top: 34, width: 72 };
+/* Origin remains the visual anchor, but the active district now receives equal visual weight. */
+const HOME = { left: -9, top: 8, width: 72 };
+const DISTRICT = { left: 29, top: 25, width: 82 };
 
 export function WorldMap({ world, selected, onSelect }: { world: World; selected: ResidentId; onSelect: (id: ResidentId) => void }) {
   const latest = districtOf(world);
@@ -65,9 +66,9 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
     </div>
 
     <div className={`world-scene archipelago-scene premium-district-scene biome-${(district - 1) % 10} ${world.weather === "rain" ? "raining" : ""} ${world.power < 35 ? "low-power" : ""} ${world.clock.running ? "clock-running" : ""}`}>
-      <div className="home-island" style={{ left: `${HOME.left}%`, top: `${HOME.top}%`, width: `${HOME.width}%` }}>
+      <div className="home-island origin-reference" style={{ left: `${HOME.left}%`, top: `${HOME.top}%`, width: `${HOME.width}%` }}>
         <img className="habitat-art" src="/habitat.png" width={1536} height={1024} alt="Their first home: a grove, reflection pool and glowing observatory beneath a glass dome." fetchPriority="high"/>
-        <span className="island-name">The first home</span>
+        <span className="island-name">Origin · The first home</span>
       </div>
 
       <div className="growing-island premium-growing-island" style={{ left: `${DISTRICT.left}%`, top: `${DISTRICT.top}%`, width: `${DISTRICT.width}%` }}>
@@ -104,7 +105,7 @@ export function WorldMap({ world, selected, onSelect }: { world: World; selected
       })}
 
       <div className="weather-badge">{world.weather === "rain" ? <CloudRain size={15}/> : <Sun size={15}/>}<span>{world.weather === "rain" ? "Gentle rain" : "Clear skies"}</span></div>
-      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>Select a resident or one of this island&apos;s unique structures.</span></>}</div>
+      <div className="scene-caption">{viewed && viewedIdentity ? <><strong>{viewedIdentity.name}</strong><span>{viewedIdentity.description} · {viewed.benefit}</span></> : <><strong>{architecture.title}</strong><span>One visual language with Origin. A different settlement shaped by this island.</span></>}</div>
     </div>
 
     <details className="district-buildings district-buildings-premium">
