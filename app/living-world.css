@@ -1,0 +1,142 @@
+/* Living World Atmosphere — makes the archipelago read as one inhabited machine ecology. */
+
+.archipelago-scene{
+  min-height:590px;
+  background:
+    linear-gradient(180deg,#07110f 0%,#0a1916 28%,#10211d 56%,#08110f 100%);
+}
+.premium-district-scene{isolation:isolate;overflow:hidden}
+.premium-district-scene>.home-island,
+.premium-district-scene>.growing-island{z-index:4}
+.premium-district-scene>.map-resident{z-index:8}
+.premium-district-scene>.weather-badge,
+.premium-district-scene>.scene-caption{z-index:12}
+
+.living-world-atmosphere{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:
+  radial-gradient(ellipse at 68% 26%,color-mix(in srgb,var(--world-water) 16%,transparent),transparent 23%),
+  radial-gradient(ellipse at 24% 18%,rgba(146,179,158,.08),transparent 24%),
+  linear-gradient(180deg,#07100f 0%,#0b1916 38%,#10231f 66%,#07100e 100%)}
+.living-world-atmosphere:before{content:"";position:absolute;inset:0;background-image:
+  radial-gradient(circle at 11% 22%,rgba(221,229,210,.16) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 73% 14%,rgba(218,226,209,.1) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 88% 29%,rgba(218,226,209,.08) 0 1px,transparent 1.5px);background-size:210px 180px,330px 280px,420px 360px;opacity:.45}
+.world-sky-glow{position:absolute;left:40%;top:-24%;width:52%;height:62%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--world-glass) 14%,transparent),transparent 67%);filter:blur(28px)}
+.world-moon{position:absolute;right:8%;top:7%;width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 36% 35%,#dce5d2 0,#aabcb0 24%,#536d66 55%,#1b2b29 78%);opacity:.34;filter:blur(.2px);box-shadow:0 0 50px color-mix(in srgb,var(--world-glass) 18%,transparent)}
+.world-cloud{position:absolute;height:42px;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(149,176,163,.08),transparent);filter:blur(13px);opacity:.65}
+.world-cloud-a{width:36%;left:-8%;top:17%;transform:rotate(-3deg)}
+.world-cloud-b{width:46%;left:29%;top:24%;transform:rotate(2deg)}
+.world-cloud-c{width:32%;right:-7%;top:36%;transform:rotate(-4deg)}
+.world-horizon-fog{position:absolute;left:-5%;right:-5%;top:34%;height:34%;background:linear-gradient(180deg,transparent,rgba(121,155,142,.09) 42%,rgba(61,91,82,.05) 63%,transparent);filter:blur(16px)}
+
+.world-energy-skyway{position:absolute;left:0;top:2%;width:100%;height:72%;overflow:visible;opacity:.52}
+.world-energy-skyway path{fill:none;vector-effect:non-scaling-stroke}
+.world-skyway-shadow{stroke:#020b09;stroke-width:6;opacity:.48}
+.world-skyway-line{stroke:color-mix(in srgb,var(--world-glass) 68%,transparent);stroke-width:1.15;stroke-dasharray:3 12;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--world-glass) 34%,transparent))}
+.world-skyway-line.secondary{opacity:.4;stroke-dasharray:1 15}
+.is-running .world-skyway-line{animation:skyway-flow 10s linear infinite}
+
+.world-horizon-cities{position:absolute;inset:0}
+.horizon-colony{position:absolute;left:var(--colony-x);top:var(--colony-y);width:120px;height:72px;transform:translate(-50%,-50%) scale(var(--colony-scale));transform-origin:center bottom;opacity:.44;filter:blur(.15px)}
+.horizon-island-mass{position:absolute;left:9px;right:9px;bottom:8px;height:27px;border-radius:52% 48% 50% 50%/58% 58% 42% 42%;background:linear-gradient(180deg,#30443a,#172521 52%,#0c1513);box-shadow:0 12px 20px #0009,0 -1px 0 rgba(190,207,179,.11)}
+.horizon-dome{position:absolute;left:27px;bottom:24px;width:66px;height:35px;border:1px solid color-mix(in srgb,var(--world-glass) 50%,transparent);border-bottom:0;border-radius:70px 70px 0 0;background:radial-gradient(ellipse at 50% 100%,rgba(188,211,196,.055),transparent 68%);box-shadow:inset 0 0 18px rgba(182,210,194,.05)}
+.horizon-tower{position:absolute;bottom:25px;left:calc(26px + var(--tower) * 15px);width:5px;height:calc(15px + var(--tower) * 4px);border-radius:4px 4px 1px 1px;background:linear-gradient(180deg,#9fb1a6,#314a42 28%,#172924);box-shadow:inset 0 -7px 0 rgba(8,16,14,.45)}
+.horizon-tower:after{content:"";position:absolute;left:50%;top:3px;width:2px;height:2px;border-radius:50%;transform:translateX(-50%);background:var(--world-warm);box-shadow:0 0 7px var(--world-warm)}
+.horizon-beacon{position:absolute;left:50%;bottom:50px;width:3px;height:3px;border-radius:50%;background:var(--world-warm);box-shadow:0 0 12px 3px color-mix(in srgb,var(--world-warm) 42%,transparent);animation:colony-beacon 3.6s ease-in-out infinite var(--colony-delay)}
+.horizon-reflection{position:absolute;left:25%;right:25%;bottom:-4px;height:20px;background:linear-gradient(180deg,color-mix(in srgb,var(--world-warm) 10%,transparent),transparent);filter:blur(7px);transform:perspective(40px) rotateX(62deg);opacity:.4}
+.horizon-colony-1{opacity:.33}.horizon-colony-2{opacity:.25}
+
+.world-motes i{position:absolute;left:var(--mote-x);top:var(--mote-y);width:var(--mote-size);height:var(--mote-size);border-radius:50%;background:color-mix(in srgb,var(--world-glass) 75%,#fff);opacity:.18;box-shadow:0 0 8px color-mix(in srgb,var(--world-glass) 45%,transparent);animation:world-mote var(--mote-duration) ease-in-out infinite var(--mote-delay)}
+.world-ocean-glow{position:absolute;left:-10%;right:-10%;bottom:-13%;height:42%;background:radial-gradient(ellipse at 62% 10%,color-mix(in srgb,var(--world-water) 24%,transparent),transparent 54%);filter:blur(18px)}
+.world-ocean-reflection{position:absolute;bottom:3%;height:22%;border-radius:50%;filter:blur(17px);opacity:.22;transform:rotate(-4deg)}
+.world-ocean-reflection-a{left:31%;width:45%;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--world-glass) 22%,transparent),transparent)}
+.world-ocean-reflection-b{right:-8%;width:34%;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--world-warm) 13%,transparent),transparent)}
+.world-vignette{position:absolute;inset:-1px;box-shadow:inset 0 0 110px 35px rgba(0,0,0,.46);z-index:9}
+.is-rain .world-cloud{opacity:.95}.is-rain .world-horizon-fog{opacity:1.3}.is-low-power .horizon-tower:after,.is-low-power .horizon-beacon{opacity:.25}
+
+/* Life within a district: infrastructure, energy, service platforms and moving machine activity. */
+.district-life-layer{position:absolute;inset:0;z-index:2;display:block;pointer-events:none;opacity:calc(.54 + var(--district-activity) * .28)}
+.district-life-layer.is-compact{opacity:.62}
+.district-network{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--district-glass) 25%,transparent))}
+.district-network path{fill:none;stroke:color-mix(in srgb,var(--district-glass) 62%,transparent);stroke-width:.8;stroke-dasharray:2.5 5.5;vector-effect:non-scaling-stroke}
+.district-network circle{fill:var(--district-warm);stroke:rgba(242,229,184,.45);stroke-width:.5;filter:drop-shadow(0 0 4px var(--district-warm))}
+.is-running .district-network path{animation:district-flow 8s linear infinite}
+.district-core{position:absolute;left:50%;top:53%;width:18%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;filter:drop-shadow(0 6px 8px rgba(0,0,0,.32))}
+.district-core:before{content:"";position:absolute;inset:28%;border-radius:50%;background:radial-gradient(circle,#e4dbaf 0,var(--district-warm) 30%,rgba(119,142,111,.18) 55%,transparent 72%);box-shadow:0 0 17px color-mix(in srgb,var(--district-warm) 30%,transparent)}
+.district-core-ring{position:absolute;border:1px solid color-mix(in srgb,var(--district-glass) 50%,transparent);border-radius:50%;inset:13%;transform:rotate(18deg)}
+.district-core-ring.ring-b{inset:25%;transform:rotate(-23deg);border-color:color-mix(in srgb,var(--district-accent) 46%,transparent)}
+.is-running .ring-a{animation:core-breathe 4.8s ease-in-out infinite}.is-running .ring-b{animation:core-breathe 4.8s ease-in-out infinite -2.4s}
+.district-core-light{position:absolute;left:50%;top:-18%;width:2px;height:38%;transform:translateX(-50%);background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--district-warm) 70%,transparent),transparent);filter:blur(.5px)}
+
+.district-satellite{position:absolute;width:14%;height:10%;filter:drop-shadow(0 7px 7px rgba(0,0,0,.4))}
+.district-satellite i{position:absolute;left:0;right:0;bottom:0;height:42%;border-radius:50%;background:linear-gradient(180deg,#53675d,#1c2c27);border-top:1px solid rgba(188,207,193,.28)}
+.district-satellite b{position:absolute;left:42%;bottom:28%;width:18%;height:62%;border-radius:9px 9px 3px 3px;background:linear-gradient(180deg,var(--district-glass),#415d53 28%,#1a2a25);box-shadow:0 -1px 0 rgba(229,238,219,.28)}
+.district-satellite b:after{content:"";position:absolute;left:50%;top:18%;width:3px;height:3px;border-radius:50%;transform:translateX(-50%);background:var(--district-warm);box-shadow:0 0 6px var(--district-warm)}
+.district-satellite-a{left:16%;top:51%;transform:scale(.84) rotate(-5deg)}
+.district-satellite-b{right:15%;top:47%;transform:scale(.72) rotate(4deg)}
+.district-satellite-c{right:28%;top:65%;transform:scale(.56) rotate(-2deg);opacity:.7}
+.is-compact .district-satellite{transform:scale(.62)}
+
+.district-light-field i{position:absolute;left:var(--light-x);top:var(--light-y);width:var(--light-size);height:var(--light-size);border-radius:50%;background:var(--district-warm);box-shadow:0 0 5px 1px color-mix(in srgb,var(--district-warm) 36%,transparent);opacity:.36;animation:district-light 3.7s ease-in-out infinite var(--light-delay)}
+.is-low-power .district-light-field i{opacity:.08}
+
+.district-drone{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;opacity:.65;transform-origin:-80px -32px;animation:drone-orbit 13s linear infinite}
+.district-drone i{position:absolute;inset:2px;border-radius:50%;background:var(--district-glass);box-shadow:0 0 8px 2px color-mix(in srgb,var(--district-glass) 50%,transparent)}
+.district-drone.drone-b{animation-duration:19s;animation-direction:reverse;transform-origin:96px 25px}.district-drone.drone-c{animation-duration:24s;transform-origin:28px 76px;opacity:.45}
+.is-compact .district-drone{display:none}
+
+/* Rendered SVG islands should feel like illuminated environments, not diagrams. */
+.drawn-terrain{filter:drop-shadow(0 20px 25px rgba(0,0,0,.5)) saturate(.92) contrast(1.035)!important}
+.premium-growing-island{z-index:4;filter:drop-shadow(0 35px 55px rgba(0,0,0,.24))}
+.premium-growing-island:before{content:"";position:absolute;left:8%;right:8%;top:16%;bottom:9%;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--world-glass,#b5cbbd) 12%,transparent),transparent 65%);filter:blur(22px);opacity:.55;z-index:-1}
+.origin-reference{opacity:.68;filter:saturate(.82) brightness(.76);transform:translate(-6%,2%) scale(.92);transform-origin:center;transition:opacity .3s,filter .3s}
+.origin-reference:hover{opacity:.82}
+
+/* Atlas: same world, seen from altitude. */
+.atlas-viewport{background:
+  radial-gradient(ellipse at 67% 24%,rgba(93,139,124,.16),transparent 24%),
+  radial-gradient(ellipse at 28% 64%,rgba(48,88,78,.17),transparent 34%),
+  linear-gradient(180deg,#06110f,#0a1c19 52%,#06120f)!important}
+.atlas-viewport:before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  repeating-linear-gradient(175deg,rgba(191,213,199,.018) 0 1px,transparent 1px 12px),
+  radial-gradient(circle at 23% 17%,rgba(203,218,202,.09) 0 1px,transparent 1.5px);background-size:auto,170px 150px;opacity:.7;z-index:0}
+.atlas-ocean-depth{background:
+  radial-gradient(ellipse at 50% 45%,rgba(73,120,107,.12),transparent 52%),
+  linear-gradient(180deg,rgba(12,30,27,.08),rgba(3,12,11,.2))!important}
+.atlas-haze{filter:blur(38px)!important;opacity:.42!important}
+.atlas-space{z-index:2}
+.atlas-route{stroke-dasharray:3 13!important;stroke-width:1.05!important;filter:drop-shadow(0 0 4px rgba(176,208,190,.18));animation:atlas-route-life 13s linear infinite}
+.atlas-route-shadow{stroke:#020b09!important;stroke-width:6!important;opacity:.38!important}
+.atlas-island{transition:filter .35s ease,opacity .35s ease,transform .35s ease}
+.atlas-space.has-selection .atlas-island:not(.is-selected){opacity:.66;filter:saturate(.72) brightness(.78)}
+.atlas-island.is-selected{z-index:3;transform:translateY(-4px);filter:saturate(1.02) brightness(1.08)}
+.atlas-island-halo{background:radial-gradient(ellipse,color-mix(in srgb,var(--island-accent) 13%,transparent),transparent 67%)!important;filter:blur(13px)}
+.atlas-island-label{background:linear-gradient(180deg,rgba(10,26,22,.88),rgba(7,18,16,.93))!important;border-color:rgba(133,165,145,.22)!important;backdrop-filter:blur(7px);box-shadow:0 9px 26px rgba(0,0,0,.22)}
+.atlas-home-art{filter:drop-shadow(0 14px 16px rgba(0,0,0,.38)) saturate(.88)}
+.atlas-custom-building{filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+.atlas-focus-card{backdrop-filter:blur(13px);box-shadow:0 24px 70px rgba(0,0,0,.36)}
+
+/* Structure art receives glass depth and inhabited light without changing mechanics. */
+.district-structure-art{filter:drop-shadow(0 9px 9px rgba(0,0,0,.38)) drop-shadow(0 0 5px color-mix(in srgb,var(--architecture-accent) 10%,transparent))!important}
+.custom-structure.complete .district-structure-art{filter:drop-shadow(0 10px 10px rgba(0,0,0,.4)) drop-shadow(0 0 7px color-mix(in srgb,var(--architecture-accent) 17%,transparent))!important}
+.custom-structure.complete:after{content:"";position:absolute;left:38%;top:39%;width:24%;height:10%;border-radius:50%;background:color-mix(in srgb,var(--architecture-accent) 18%,transparent);filter:blur(7px);box-shadow:0 0 13px color-mix(in srgb,var(--architecture-accent) 22%,transparent);pointer-events:none}
+
+@keyframes skyway-flow{to{stroke-dashoffset:-120}}
+@keyframes atlas-route-life{to{stroke-dashoffset:-160}}
+@keyframes district-flow{to{stroke-dashoffset:-64}}
+@keyframes colony-beacon{0%,100%{opacity:.28;transform:scale(.78)}50%{opacity:1;transform:scale(1.35)}}
+@keyframes core-breathe{0%,100%{opacity:.3;transform:scale(.94) rotate(15deg)}50%{opacity:.72;transform:scale(1.06) rotate(22deg)}}
+@keyframes district-light{0%,100%{opacity:.18;transform:scale(.65)}50%{opacity:.7;transform:scale(1.25)}}
+@keyframes drone-orbit{to{transform:rotate(360deg)}}
+@keyframes world-mote{0%,100%{transform:translate3d(0,0,0);opacity:.08}50%{transform:translate3d(12px,-18px,0);opacity:.32}}
+
+@media(max-width:760px){
+  .archipelago-scene{min-height:470px}
+  .world-moon{width:48px;height:48px}
+  .horizon-colony{opacity:.3}
+  .origin-reference{opacity:.46;transform:translate(-12%,3%) scale(.8)}
+  .premium-growing-island{filter:drop-shadow(0 24px 34px rgba(0,0,0,.3))}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .world-skyway-line,.atlas-route,.horizon-beacon,.district-core-ring,.district-light-field i,.district-drone,.world-motes i,.district-network path{animation:none!important}
+}
