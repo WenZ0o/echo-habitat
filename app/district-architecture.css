@@ -1,0 +1,171 @@
+/* District architecture layer — shared visual language with the Origin island. */
+
+.district-structure-art{
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+  filter:drop-shadow(0 7px 7px rgba(0,0,0,.34)) saturate(.92) contrast(.98);
+}
+.atlas-custom-building{
+  width:72px;
+  height:72px;
+  transform:translate(-50%,-82%);
+  filter:none;
+}
+.atlas-custom-building .district-structure-art{filter:drop-shadow(0 5px 5px rgba(0,0,0,.4)) saturate(.9)}
+.atlas-medium .atlas-custom-building{width:62px;height:62px}
+.atlas-near .atlas-custom-building{width:76px;height:76px}
+
+.atlas-settlement-identity,.atlas-current-build{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin:0 0 11px;
+  padding:9px 10px;
+  border-left:1px solid rgba(192,214,181,.22);
+  background:linear-gradient(90deg,rgba(163,194,151,.045),transparent);
+}
+.atlas-settlement-identity span,.atlas-current-build span{font:7px var(--font-mono);letter-spacing:.15em;color:#72877e}
+.atlas-settlement-identity strong,.atlas-current-build strong{font:500 10px/1.4 var(--font-mono);color:#cbd7c4}
+.atlas-settlement-identity small{font:8px/1.45 var(--font-mono);color:#71877d}
+.atlas-current-build{border-left-color:rgba(221,199,132,.28);background:linear-gradient(90deg,rgba(206,181,108,.055),transparent)}
+.atlas-current-build strong{color:#d8d2ad}
+
+.district-context-premium{
+  display:grid;
+  grid-template-columns:minmax(180px,.8fr) minmax(280px,1.2fr);
+  gap:28px;
+  padding:17px 20px;
+  border-bottom:1px solid rgba(184,210,173,.12);
+  background:linear-gradient(145deg,#0d1c17,#12241d);
+}
+.district-context-premium>div:first-child{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.district-context-kicker{font:8px var(--font-mono);letter-spacing:.16em;color:#6f877b}
+.district-context-premium strong{font:500 15px/1.3 var(--font-mono);color:#dfe8d8}
+.district-architecture-copy{display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:3px;padding-left:18px;border-left:1px solid rgba(191,213,180,.14)}
+.district-architecture-copy b{grid-column:1 / -1;font:400 18px/1.2 Georgia,"Times New Roman",serif;color:#e5ebdf}
+.district-architecture-copy span{grid-column:1 / -1;font:8px var(--font-mono);letter-spacing:.11em;text-transform:uppercase;color:#82988d}
+.district-architecture-copy p{grid-column:1 / -1;margin:3px 0 0;max-width:660px;color:#8ca094;font-size:11px;line-height:1.55}
+
+.premium-district-scene{
+  position:relative;
+  isolation:isolate;
+  background:
+    radial-gradient(ellipse at 67% 49%,rgba(127,164,126,.13),transparent 33%),
+    radial-gradient(ellipse at 18% 25%,rgba(78,126,105,.11),transparent 27%),
+    linear-gradient(145deg,#0a1713,#0c1b16 48%,#07110f);
+}
+.premium-district-scene:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 72% 24%,rgba(216,228,197,.055),transparent 18%),
+    linear-gradient(120deg,transparent 20%,rgba(179,203,173,.025) 46%,transparent 67%);
+}
+.premium-district-scene:after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  right:-2%;
+  top:7%;
+  width:78%;
+  aspect-ratio:1.5;
+  background:url('/world-island.png') center/contain no-repeat;
+  mix-blend-mode:soft-light;
+  opacity:.11;
+  filter:saturate(.6) blur(.15px);
+  mask-image:radial-gradient(ellipse at center,#000 34%,rgba(0,0,0,.75) 55%,transparent 76%);
+  pointer-events:none;
+}
+.premium-growing-island{filter:saturate(.94) contrast(1.01)}
+.premium-growing-island .drawn-terrain{filter:drop-shadow(0 21px 22px rgba(0,0,0,.45)) saturate(.93) contrast(.98)}
+.district-atmosphere{
+  position:absolute;
+  inset:12% 3% 8%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(206,223,185,.08),transparent 66%);
+  filter:blur(16px);
+  pointer-events:none;
+}
+
+/* Biome-specific environmental light, restrained to stay in the Origin palette family. */
+.biome-0 .district-atmosphere{background:radial-gradient(ellipse,rgba(129,172,111,.14),transparent 65%)}
+.biome-1 .district-atmosphere{background:radial-gradient(ellipse,rgba(199,145,88,.12),transparent 65%)}
+.biome-2 .district-atmosphere{background:radial-gradient(ellipse,rgba(87,161,159,.14),transparent 65%)}
+.biome-3 .district-atmosphere{background:radial-gradient(ellipse,rgba(161,166,121,.1),transparent 65%)}
+.biome-4 .district-atmosphere{background:radial-gradient(ellipse,rgba(84,118,110,.13),transparent 65%)}
+.biome-5 .district-atmosphere{background:radial-gradient(ellipse,rgba(150,174,95,.12),transparent 65%)}
+.biome-6 .district-atmosphere{background:radial-gradient(ellipse,rgba(105,139,166,.13),transparent 65%)}
+.biome-7 .district-atmosphere{background:radial-gradient(ellipse,rgba(139,160,119,.12),transparent 65%)}
+.biome-8 .district-atmosphere{background:radial-gradient(ellipse,rgba(78,138,133,.13),transparent 65%)}
+.biome-9 .district-atmosphere{background:radial-gradient(ellipse,rgba(178,100,70,.11),transparent 65%)}
+
+.custom-structure{
+  width:24%;
+  aspect-ratio:1;
+  transform:translate(-50%,-83%);
+}
+.custom-structure .map-custom-structure-art{position:absolute;inset:0;transition:filter .2s ease,transform .2s ease,opacity .3s ease}
+.custom-structure:hover .map-custom-structure-art,.custom-structure.selected .map-custom-structure-art{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--architecture-accent) 28%,transparent)) drop-shadow(0 7px 7px rgba(0,0,0,.38));transform:translateY(-2px)}
+.custom-structure.foundation .map-custom-structure-art{clip-path:inset(72% 0 0);opacity:.52}
+.custom-structure.frame .map-custom-structure-art{clip-path:inset(35% 0 0);opacity:.76}
+.custom-structure.finishing .map-custom-structure-art{clip-path:inset(8% 0 0);opacity:.92}
+.custom-structure.complete .map-custom-structure-art{clip-path:none;opacity:1}
+.custom-structure .building-footprint{background:radial-gradient(ellipse,rgba(180,199,132,.09),transparent 70%);border-color:rgba(181,201,138,.27)}
+
+.archipelago-scene .scene-caption{display:flex;flex-direction:column;gap:2px;max-width:min(520px,calc(100% - 28px))}
+.archipelago-scene .scene-caption strong{font:500 11px var(--font-mono);color:#d4dfcc}
+.archipelago-scene .scene-caption span{font-size:10px;color:#899d91;line-height:1.45}
+
+.district-buildings-premium{background:#0c1814;border-top:1px solid rgba(182,208,173,.12)}
+.district-buildings-premium>summary{padding:14px 18px;color:#b9c8b2;font:10px var(--font-mono);letter-spacing:.03em}
+.district-buildings-premium .district-building-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(176,203,168,.09)}
+.district-buildings-premium .district-building-list button{
+  min-height:116px;
+  display:grid;
+  grid-template-columns:70px 1fr;
+  gap:10px;
+  align-items:center;
+  padding:12px;
+  background:linear-gradient(145deg,#0c1814,#101f19);
+  color:#aebfa9;
+}
+.district-buildings-premium .district-building-list button:hover,.district-buildings-premium .district-building-list button[aria-pressed=true]{background:linear-gradient(145deg,#14251d,#1a2d23)}
+.district-list-art{width:68px;height:68px;display:block}
+.district-list-copy{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
+.district-list-copy strong{color:#d7e0d0;font:500 11px/1.3 var(--font-mono)}
+.district-list-copy small{color:#7f9489;font:10px/1.42 var(--font-sans,Arial,sans-serif)}
+.district-list-copy em{font:8px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:#91a98f;font-style:normal;margin-top:2px}
+
+.district-project{position:relative;overflow:hidden}
+.district-project:after{content:"";position:absolute;right:-80px;top:-100px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(163,193,145,.065),transparent 66%);pointer-events:none}
+.district-project-identity{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:13px;padding-bottom:10px;border-bottom:1px solid rgba(184,207,175,.1)}
+.district-project-identity>span{font:8px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:#70867b}
+.district-project-identity>b{font:400 15px Georgia,"Times New Roman",serif;color:#d9e2d2}
+.district-project-identity>small{width:100%;font:8px var(--font-mono);letter-spacing:.06em;color:#72877c}
+.district-blueprint-grid .blueprint{min-height:142px}
+.district-blueprint-grid .blueprint h4{font-size:12px;line-height:1.3}
+.district-blueprint-grid .blueprint p{font-size:10px;line-height:1.45;color:#829689}
+.district-blueprint-grid .blueprint small{text-transform:capitalize}
+
+@media(max-width:900px){
+  .district-context-premium{grid-template-columns:1fr;gap:12px}
+  .district-architecture-copy{padding-left:0;padding-top:10px;border-left:0;border-top:1px solid rgba(191,213,180,.12)}
+  .district-buildings-premium .district-building-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .district-context-premium{padding:14px}
+  .district-buildings-premium .district-building-list{grid-template-columns:1fr}
+  .district-buildings-premium .district-building-list button{min-height:104px;grid-template-columns:62px 1fr;padding:10px}
+  .district-list-art{width:60px;height:60px}
+  .custom-structure{width:27%}
+  .atlas-settlement-identity,.atlas-current-build{padding:7px 8px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .district-structure-art,.custom-structure .map-custom-structure-art{transition:none}
+}
