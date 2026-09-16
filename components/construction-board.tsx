@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { BLUEPRINTS, blueprintCost, districtOf, nextBlueprint, RESOURCE_IDS, RESOURCES, workRequired } from "@/lib/habitat/construction";
 import { PROFILES, RESIDENT_IDS } from "@/lib/habitat/residents";
 import type { BlueprintId, ConstructionPhase, World } from "@/lib/habitat/types";
+import { biome } from "./island-terrain";
+import { districtArchitecture, districtStructure } from "./district-architecture";
 
 const BUILDING_ICONS = { garden: Flower2, solar: Sun, lookout: TowerControl, cistern: Droplets, workshop: Hammer, bridge: Route };
 const RESOURCE_ICONS = { biomass: Sprout, salvage: Wrench, insight: Sparkles };
@@ -65,14 +67,18 @@ export function ConstructionBoard({ world }: { world: World }) {
   const district = districtOf(world);
   const total = Object.values(built).reduce((a, b) => a + b, 0);
   const blueprint = project ? BLUEPRINTS.find(item => item.id === project.blueprint)! : nextBlueprint(world);
-  const cost = blueprintCost(blueprint, project?.district ?? district);
-  const required = workRequired(blueprint, project?.district ?? district);
+  const projectDistrict = project?.district ?? district;
+  const identity = districtStructure(blueprint.id, projectDistrict);
+  const architecture = districtArchitecture(projectDistrict);
+  const cost = blueprintCost(blueprint, projectDistrict);
+  const required = workRequired(blueprint, projectDistrict);
   const materialTotal = RESOURCE_IDS.reduce((sum, id) => sum + cost[id], 0);
   const available = RESOURCE_IDS.reduce((sum, id) => sum + Math.min(resources[id], cost[id]), 0);
   const progress = Math.floor(100 * (project ? project.work / required : available / materialTotal));
   const phase = projectPhase(world);
   const Icon = BUILDING_ICONS[blueprint.id];
   const lastDistricts = Array.from({ length: Math.min(district, 5) }, (_, i) => district - Math.min(district, 5) + i + 1);
+
   return <section className="construction-section" aria-labelledby="construction-heading">
     <div className="section-label"><h2 id="construction-heading">A world they build <span>{String(total).padStart(2, "0")}</span></h2><span>District {String(district).padStart(2, "0")}</span></div>
     <div className="construction-panel">
@@ -84,38 +90,40 @@ export function ConstructionBoard({ world }: { world: World }) {
       </div>
 
       {decision && <div className="council-card" aria-label="Latest shared decision">
-        <div className="council-heading"><span className="council-icon"><Users size={18}/></span><div><span className="eyebrow"><Vote size={12}/> SHARED DECISION</span><strong>{BLUEPRINTS.find(item => item.id === decision.chosen)?.name}</strong></div><small>Cycle {decision.tick}</small></div>
+        <div className="council-heading"><span className="council-icon"><Users size={18}/></span><div><span className="eyebrow"><Vote size={12}/> SHARED DECISION · {biome(decision.district).shortName.toUpperCase()}</span><strong>{districtStructure(decision.chosen, decision.district).name}</strong></div><small>Cycle {decision.tick}</small></div>
         <p>{decision.summary}</p>
-        <div className="council-votes">{RESIDENT_IDS.map(id => <span key={id} style={{ "--resident": PROFILES[id].color } as CSSProperties}><i/>{PROFILES[id].name}<b>→</b>{BLUEPRINTS.find(item => item.id === decision.votes[id])?.name}</span>)}</div>
+        <div className="council-votes">{RESIDENT_IDS.map(id => <span key={id} style={{ "--resident": PROFILES[id].color } as CSSProperties}><i/>{PROFILES[id].name}<b>→</b>{districtStructure(decision.votes[id], decision.district).name}</span>)}</div>
         {decision.reasons && <div className="council-reasons">{RESIDENT_IDS.map(id => <p key={id} style={{ "--resident": PROFILES[id].color } as CSSProperties}><strong>{PROFILES[id].name}&apos;s reason</strong>{decision.reasons?.[id]}</p>)}</div>}
       </div>}
 
-      <div className="current-project" style={{ "--builder": PROFILES[blueprint.lead].color } as CSSProperties}>
-        <div className="project-heading"><span className="project-icon"><Icon size={25} strokeWidth={1.4}/></span><div><span className="eyebrow">{project ? "TAKING SHAPE" : "THE NEXT IDEA"}</span><h3>{blueprint.name}</h3></div><span className="project-phase">{project && phase ? phase.phase : "Gathering"}</span></div>
-        <p className="project-description">{blueprint.description}</p>
+      <div className="current-project district-project" style={{ "--builder": PROFILES[blueprint.lead].color } as CSSProperties}>
+        <div className="district-project-identity"><span>{biome(projectDistrict).name}</span><b>{architecture.title}</b><small>{architecture.style}</small></div>
+        <div className="project-heading"><span className="project-icon"><Icon size={25} strokeWidth={1.4}/></span><div><span className="eyebrow">{project ? "TAKING SHAPE" : "THE NEXT IDEA"}</span><h3>{identity.name}</h3></div><span className="project-phase">{project && phase ? phase.phase : "Gathering"}</span></div>
+        <p className="project-description">{identity.description}</p>
         <div className="project-progress-label"><span>{project ? `${project.work} / ${required} work · materials reserved` : "Materials gathered"}</span><strong>{progress}%</strong></div>
-        <Progress value={progress} aria-label={`${blueprint.name}: ${project ? "construction" : "materials"} progress`}/>
+        <Progress value={progress} aria-label={`${identity.name}: ${project ? "construction" : "materials"} progress`}/>
         {project ? <div className="contributions" aria-label="Work contributed by each resident">{RESIDENT_IDS.map(id => <span key={id} style={{ color: PROFILES[id].color }}>{PROFILES[id].name}<strong>{project.contributions[id]}</strong></span>)}</div>
           : <p className="material-needs">Needed: {RESOURCE_IDS.filter(id => cost[id] > 0).map(id => `${Math.min(resources[id], cost[id])}/${cost[id]} ${RESOURCES[id].name.toLowerCase()}`).join(" · ")}</p>}
-        <p className="project-note"><span className="status-dot running"/>{world.intervention?.kind === "blackout" ? "Power and looking after each other come first." : project ? "The site changes from foundation to frame to finishing as work accumulates." : "When enough materials are available, the three meet and choose their next priority together."}</p>
+        <p className="project-note"><span className="status-dot running"/>{world.intervention?.kind === "blackout" ? "Power and looking after each other come first." : project ? `This is a ${biome(projectDistrict).shortName.toLowerCase()} structure: the same shared need takes a form unique to this island.` : "When enough materials are available, the three meet and choose what this island needs next."}</p>
       </div>
 
-      <div className="blueprint-grid" aria-label={`Building plans for district ${district}`}>
+      <div className="blueprint-grid district-blueprint-grid" aria-label={`Unique building plans for district ${district}`}>
         {BLUEPRINTS.map(item => {
           const BuildingIcon = BUILDING_ICONS[item.id];
           const finished = built[item.id] >= district;
           const active = blueprint.id === item.id;
+          const local = districtStructure(item.id, district);
           return <div key={item.id} className={`blueprint ${finished ? "finished" : active ? "current" : ""}`}>
             <div><BuildingIcon size={17}/><span>{finished ? <Check size={14}/> : active ? (project ? "Building" : "Gathering") : "Candidate"}</span></div>
-            <h4>{item.name}</h4><p>{item.benefit}</p><small>{built[item.id]} built · {PROFILES[item.lead].name}</small>
+            <h4>{local.name}</h4><p>{local.description}</p><small>{local.functionalRole} · {PROFILES[item.lead].name}</small>
           </div>;
         })}
       </div>
 
       <div className="district-trail" aria-label={`${district} districts reached`}>
         <div><Compass size={15}/><span>Beyond the first habitat</span></div>
-        <ol>{district > 5 && <li className="older-districts">+{district - 5} established</li>}{lastDistricts.map(n => <li key={n} className={n === district ? "settling" : "established"}>{n < district ? <Check size={12}/> : <Layers3 size={12}/>}<span>{String(n).padStart(2, "0")}</span><small>{n === district ? "Settling" : "Established"}</small></li>)}</ol>
-        <p>Every completed bridge reveals another visible island fragment. The settlement keeps expanding without replacing the world they already made.</p>
+        <ol>{district > 5 && <li className="older-districts">+{district - 5} established</li>}{lastDistricts.map(n => <li key={n} className={n === district ? "settling" : "established"}>{n < district ? <Check size={12}/> : <Layers3 size={12}/>}<span>{String(n).padStart(2, "0")}</span><small>{n === district ? biome(n).shortName : districtArchitecture(n).title.replace("The ", "")}</small></li>)}</ol>
+        <p>Every district keeps its own landscape, landmark and architecture. The underlying needs repeat, but the world never builds the same settlement twice.</p>
       </div>
     </div>
   </section>;
