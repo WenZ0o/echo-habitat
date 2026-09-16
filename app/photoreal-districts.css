@@ -1,0 +1,57 @@
+/* Photoreal district pass: the visible world uses the same raster art language as Origin. */
+
+.archipelago-scene{
+  aspect-ratio:1.45;
+  min-height:0;
+  background:radial-gradient(ellipse at 48% 43%,#15241b 0,#0b1510 58%,#07100c 100%)!important;
+  overflow:hidden;
+}
+.home-island,.growing-island{position:absolute;aspect-ratio:1.5;pointer-events:none}
+.home-island .habitat-art{width:100%;height:auto;mix-blend-mode:normal;mask-image:radial-gradient(ellipse at center,#000 55%,#000c 67%,transparent 82%);filter:drop-shadow(0 20px 25px rgba(0,0,0,.42))}
+.origin-reference{opacity:1!important;filter:none!important;transform:none!important}
+.premium-growing-island,.living-district{filter:none!important;z-index:4}
+.premium-growing-island:before,.living-district:after,.district-atmosphere{display:none!important}
+
+.district-raster-stack{position:absolute;inset:0;display:block;pointer-events:none}
+.district-raster-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 18px 24px rgba(0,0,0,.46)) saturate(.98) contrast(1.025)!important;user-select:none}
+.low-power .district-raster-art{filter:drop-shadow(0 18px 24px rgba(0,0,0,.5)) brightness(.62) saturate(.72)!important}
+.district-raster-lighting{position:absolute;left:16%;right:14%;top:16%;bottom:18%;border-radius:50%;background:radial-gradient(ellipse at 56% 45%,rgba(211,196,128,.065),transparent 48%),radial-gradient(ellipse at 42% 58%,rgba(92,151,137,.07),transparent 56%);filter:blur(12px);opacity:.72}
+.district-raster-aux{position:absolute;inset:0}
+.district-aux-structure{position:absolute;width:16%;aspect-ratio:1;transform:translate(-50%,-84%) scale(var(--aux-scale)) rotate(var(--aux-rotate));transform-origin:50% 85%;filter:drop-shadow(0 6px 6px rgba(0,0,0,.4));transition:opacity .3s ease}
+
+.raster-structure-shell{position:absolute;inset:0;display:block;transform:scale(var(--raster-scale)) rotate(var(--raster-rotate));transform-origin:50% 88%;overflow:visible}
+.raster-structure-sprite{filter:drop-shadow(0 5px 6px rgba(0,0,0,.45)) saturate(.98) contrast(1.02)!important;clip-path:inset(calc(100% - var(--raster-progress,100%)) 0 0);opacity:.98}
+.custom-structure{width:22%;aspect-ratio:1;transform:translate(-50%,-85%)}
+.custom-structure .raster-structure-shell{inset:0}
+.custom-structure:hover .raster-structure-sprite,.custom-structure.selected .raster-structure-sprite{filter:drop-shadow(0 0 9px rgba(203,218,161,.34)) drop-shadow(0 6px 7px rgba(0,0,0,.5)) saturate(1.02)!important}
+.custom-structure.clearing .building-footprint{opacity:.2}
+.custom-structure.foundation .raster-structure-sprite{opacity:.45;filter:sepia(.25) drop-shadow(0 5px 6px rgba(0,0,0,.45))!important}
+.custom-structure.frame .raster-structure-sprite{opacity:.68}
+.custom-structure.finishing .raster-structure-sprite{opacity:.9}
+
+.district-list-art{position:relative;overflow:visible}
+.district-list-art .raster-structure-shell{inset:0}
+.district-list-art .raster-structure-sprite{filter:drop-shadow(0 4px 4px rgba(0,0,0,.38)) saturate(.96)!important}
+
+.atlas-island>.district-raster-stack{position:absolute;inset:0;width:300px;height:200px}
+.atlas-island .district-raster-art{width:300px;height:200px;object-fit:contain;filter:drop-shadow(0 14px 15px rgba(0,0,0,.46)) saturate(.96) contrast(1.02)!important}
+.atlas-island.is-selected .district-raster-art{filter:drop-shadow(0 0 9px rgba(189,220,140,.26)) drop-shadow(0 16px 17px rgba(0,0,0,.52)) saturate(1)!important}
+.atlas-far .district-raster-aux{display:none}
+.atlas-medium .district-aux-structure{opacity:.5!important}
+.atlas-building .raster-structure-shell{inset:0}
+.atlas-building .raster-structure-sprite{filter:drop-shadow(0 4px 4px rgba(0,0,0,.5)) saturate(.96)!important}
+.atlas-silhouette{display:none!important}
+
+.living-world-atmosphere,.world-origin-link,.district-life-layer{display:none!important}
+.atlas-viewport{background:radial-gradient(ellipse at 45% 35%,#18352e,#0d211c 62%,#071512)!important}
+.atlas-viewport:before{opacity:.18!important}
+.atlas-route{stroke:#9eb59c!important;stroke-opacity:.22!important;stroke-dasharray:4 12!important;filter:none!important;animation:none!important}
+.atlas-route-shadow{stroke:#020807!important;stroke-opacity:.28!important}
+
+@media(max-width:760px){
+  .district-aux-structure{width:18%}
+  .custom-structure{width:24%}
+}
+@media(prefers-reduced-motion:reduce){
+  .district-aux-structure,.raster-structure-sprite{transition:none}
+}
