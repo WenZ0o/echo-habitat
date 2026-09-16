@@ -5,6 +5,8 @@
 .world-origin-link i{left:4%}.world-origin-link b{left:96%}
 .world-origin-link span{position:absolute;left:50%;top:-17px;transform:translateX(-50%) rotate(7deg);font:7px var(--font-mono);letter-spacing:.18em;color:rgba(174,198,184,.48);white-space:nowrap}
 
+.district-life-layer{opacity:.78}
+.district-life-layer.is-compact{opacity:.62}
 .terrain-city-light{transform-box:fill-box;transform-origin:center;animation:terrain-light-pulse 4.2s ease-in-out infinite}
 .terrain-city-infrastructure g:nth-of-type(2n) .terrain-city-light{animation-delay:-1.4s}
 .terrain-city-infrastructure g:nth-of-type(3n) .terrain-city-light{animation-delay:-2.8s}
