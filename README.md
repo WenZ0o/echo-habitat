@@ -34,27 +34,33 @@ Origin is the first home and the visual and geographic heart of ECHO HABITAT.
 
 Every completed bridge reveals another district in the same world. The outer districts use the same high-resolution environment and structure artwork as Origin instead of a separate vector illustration style. Moss-covered rock, natural paths, glass-and-metal habitat architecture and warm inhabited lighting remain consistent across the whole world.
 
-The atlas grows radially around Origin. Nearby districts form the first world ring; later districts occupy wider rings around the center. Routes connect new settlements back toward the nearest established inner ring, so the world reads as an expanding archipelago rather than a horizontal sequence.
+The atlas does not use rows, columns or perfect rings. Districts receive stable deterministic scatter positions around Origin with collision avoidance, varied distance, unequal angles and irregular branching. The layout looks random and organic while remaining identical after every reload. Routes connect each settlement to a nearby earlier district instead of tracing a geometric orbit.
 
 The atlas can be dragged, zoomed and explored. Select a district to focus it, inspect its settlement progress and enter its live view.
 
-Districts remain distinct through authored city kits rather than incompatible art styles. Each district has its own:
+Districts remain distinct through authored city identities and globally unique visible structure recipes. Every main building and support structure receives its own world asset ID and a different composite recipe made from high-resolution structure parts, scale, orientation and silhouette. Complete rendered building recipes are not reused by another island.
 
-- settlement identity and locally named structures
-- dominant structure types and realistic supporting clusters
-- building mix, scale, rotation and visual hierarchy
+The first ten districts have authored identities; later frontier districts receive district-numbered architecture and structure names rather than cycling back to an earlier city.
+
+Each district has its own:
+
+- settlement identity and locally unique structure names
+- globally unique visible building compositions
+- supporting structures with separate world asset identities
+- building scale, rotation, hierarchy and density
 - landmark and compact atlas identity
 - environmental and narrative character
 
-The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible settlement composition changes strongly from district to district.
+The underlying simulation roles stay consistent so the world remains mechanically coherent, while the visible architecture does not repeat as an identical building from island to island.
 
 ## Watch a world take shape
 
 - **Moving residents:** follow Moss, Lux and Echo through Origin and the outer districts.
 - **Shared decisions:** see council votes and the reasons behind them.
 - **Visible construction:** structures progress through foundation, frame and finishing stages.
-- **Distinct city kits:** Grove City, Sunworks, Water Quarter, Archive City, Basalt Works, Terrace Commune, Glass Ridge, Wind Gardens, Flooded Sanctuary and Ember Enclave emphasize different realistic structures and settlement density.
-- **Growing world rings:** completed bridges reveal new islands around Origin without replacing the world already built.
+- **Globally unique structures:** every rendered main or support structure receives a distinct world recipe instead of recycling an identical building.
+- **Organic archipelago:** new islands occupy stable irregular positions around Origin rather than rows or perfect rings.
+- **Growing world:** completed bridges reveal new islands without replacing the world already built.
 - **Interactive atlas:** drag, zoom, focus districts, fit the full world or follow the active frontier.
 - **Personal memories:** residents remember discoveries, encounters and what they build together.
 - **A shared chronicle:** browse the latest moments in the world's story.
@@ -110,10 +116,10 @@ Configure these environment variables locally or in Vercel:
 
 ## Project status
 
-Version 0.7 — Radial world and distinct city-kit pass.
+Version 0.8 — Organic scatter and globally unique architecture pass.
 
 Moving residents · Council decisions · Construction phases  
-Photoreal district art · Origin-centered radial atlas · Distinct city kits · Persistent memories · Protected owner controls
+Photoreal district art · Organic Origin-centered atlas · Globally unique rendered structures · Persistent memories · Protected owner controls
 
 ---
 

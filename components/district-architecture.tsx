@@ -148,8 +148,28 @@ const ARCHITECTURES: DistrictArchitecture[] = [
   },
 ];
 
-export function districtArchitecture(district: number) {
-  return ARCHITECTURES[(Math.max(1, district) - 1) % ARCHITECTURES.length];
+const ROLE_NAMES: Record<BlueprintId, string> = {
+  garden: "Nursery", solar: "Powerworks", lookout: "Observatory", cistern: "Reservoir", workshop: "Atelier", bridge: "Crossing",
+};
+const ROLE_FUNCTIONS: Record<BlueprintId, string> = {
+  garden: "growth", solar: "power", lookout: "insight", cistern: "water", workshop: "salvage", bridge: "expansion",
+};
+
+export function districtArchitecture(district: number): DistrictArchitecture {
+  const index = Math.max(1, district) - 1;
+  if (index < ARCHITECTURES.length) return ARCHITECTURES[index];
+  const base = ARCHITECTURES[index % ARCHITECTURES.length];
+  const code = String(index + 1).padStart(2, "0");
+  return {
+    title: `The Frontier Assembly ${code}`,
+    style: `${base.style} · frontier ${code}`,
+    description: `District ${code} develops a one-off frontier architecture from the same material world without reusing another district's named structures.`,
+    structures: Object.fromEntries((Object.keys(ROLE_NAMES) as BlueprintId[]).map(id => [id, {
+      name: `${ROLE_NAMES[id]} ${code}`,
+      description: `A district-${code} ${ROLE_NAMES[id].toLowerCase()} with a globally unique visible structure recipe.`,
+      functionalRole: ROLE_FUNCTIONS[id],
+    }])) as Record<BlueprintId, DistrictStructure>,
+  };
 }
 
 export function districtStructure(id: BlueprintId, district: number) {
